@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Actualización de solicitud</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #24323b;">
+  <h1 style="background:#27ae60; color:white; padding:16px;">Residuos 360</h1>
+  <div style="padding:16px;">
+    <p>Hola {{ solicitud.owner.nombre_visible }},</p>
+    <p>Tu solicitud <strong>#{{ solicitud.id }}</strong> fue actualizada.</p>
+    <ul>
+      <li><strong>Estado:</strong> {{ solicitud.estado|capitalize }}</li>
+      <li><strong>Tipo:</strong> {{ solicitud.tipo }}</li>
+      <li><strong>Peso estimado:</strong> {{ '%.2f'|format(solicitud.peso_estimado) }} kg</li>
+      <li><strong>Peso real:</strong> {{ '%.2f'|format(solicitud.peso_real or 0) }} kg</li>
+      <li><strong>Fecha:</strong> {{ solicitud.fecha_label }}</li>
+    </ul>
+    {% if diferencia %}
+    <p>Ajuste informado: <strong>UYU {{ '%.2f'|format(diferencia) }}</strong>.</p>
+    {% endif %}
+    <p>
+      Podés seguir el retiro desde tu panel:
+      <a href="{{ url_for('mis_solicitudes', _external=True) }}">Ver mis solicitudes</a>
+    </p>
+  </div>
+</body>
+</html>

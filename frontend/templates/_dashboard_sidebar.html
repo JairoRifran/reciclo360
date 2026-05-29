@@ -1,0 +1,148 @@
+<aside class="dashboard-sidebar">
+  <div class="dashboard-sidebar-head">
+    <span class="dashboard-sidebar-kicker">
+      {% if current_user.role == 'empresa' %}
+      <i class="fa-solid fa-building"></i> Panel empresa
+      {% elif current_user.role == 'gestor' %}
+      <i class="fa-solid fa-truck"></i> Panel operador
+      {% elif current_user.role == 'institucional' %}
+      <i class="fa-solid fa-landmark"></i> Panel institucional
+      {% else %}
+      <i class="fa-solid fa-shield-halved"></i> Panel admin
+      {% endif %}
+    </span>
+    <strong>{{ current_user.nombre_visible if current_user.role != 'admin' else 'Residuos 360' }}</strong>
+    {% if current_user.role == 'institucional' %}
+    <p>{{ current_user.institution_label }}</p>
+    {% endif %}
+    <p>{{ current_user.email }}</p>
+  </div>
+
+  <nav class="dashboard-sidebar-nav">
+    {% if current_user.role == 'empresa' %}
+    <a href="{{ url_for('dashboard') }}" class="dashboard-sidebar-link {% if request.path == url_for('dashboard') %}is-active{% endif %}">
+      <i class="fa-solid fa-house"></i>
+      <span>Resumen</span>
+    </a>
+    <a href="{{ url_for('solicitar') }}" class="dashboard-sidebar-link {% if request.path == url_for('solicitar') %}is-active{% endif %}">
+      <i class="fa-solid fa-plus"></i>
+      <span>Solicitar retiro</span>
+    </a>
+    <a href="{{ url_for('mis_solicitudes') }}" class="dashboard-sidebar-link {% if request.path == url_for('mis_solicitudes') %}is-active{% endif %}">
+      <i class="fa-solid fa-list-check"></i>
+      <span>Mis solicitudes</span>
+    </a>
+    <a href="{{ url_for('documentos') }}" class="dashboard-sidebar-link {% if request.path == url_for('documentos') %}is-active{% endif %}">
+      <i class="fa-regular fa-folder-open"></i>
+      <span>Centro documental</span>
+    </a>
+    <a href="{{ url_for('contratos') }}" class="dashboard-sidebar-link {% if request.path == url_for('contratos') %}is-active{% endif %}">
+      <i class="fa-solid fa-file-signature"></i>
+      <span>Contratos</span>
+    </a>
+    <a href="{{ url_for('cumplimiento') }}" class="dashboard-sidebar-link {% if request.path == url_for('cumplimiento') %}is-active{% endif %}">
+      <i class="fa-solid fa-shield-halved"></i>
+      <span>Cumplimiento</span>
+    </a>
+    <a href="{{ url_for('declaraciones') }}" class="dashboard-sidebar-link {% if request.path == url_for('declaraciones') %}is-active{% endif %}">
+      <i class="fa-regular fa-file-lines"></i>
+      <span>Declaraciones</span>
+    </a>
+    <a href="{{ url_for('reportes') }}" class="dashboard-sidebar-link {% if request.path == url_for('reportes') %}is-active{% endif %}">
+      <i class="fa-solid fa-chart-column"></i>
+      <span>Reportes</span>
+    </a>
+    <a href="{{ url_for('mi_plan') }}" class="dashboard-sidebar-link {% if request.path == url_for('mi_plan') %}is-active{% endif %}">
+      <i class="fa-regular fa-credit-card"></i>
+      <span>Mi plan</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#perfil" class="dashboard-sidebar-link">
+      <i class="fa-regular fa-id-card"></i>
+      <span>Perfil</span>
+    </a>
+    {% elif current_user.role == 'gestor' %}
+    <a href="{{ url_for('dashboard') }}" class="dashboard-sidebar-link {% if request.path == url_for('dashboard') %}is-active{% endif %}">
+      <i class="fa-solid fa-house"></i>
+      <span>Resumen</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#revisar" class="dashboard-sidebar-link">
+      <i class="fa-regular fa-bell"></i>
+      <span>Pedidos nuevos</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#retiros" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-truck-fast"></i>
+      <span>Por retirar</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#cierres" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-clipboard-check"></i>
+      <span>Por cerrar</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#ingresos" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-sack-dollar"></i>
+      <span>Mis ingresos</span>
+    </a>
+    <a href="{{ url_for('documentos') }}" class="dashboard-sidebar-link {% if request.path == url_for('documentos') %}is-active{% endif %}">
+      <i class="fa-regular fa-folder-open"></i>
+      <span>Centro documental</span>
+    </a>
+    <a href="{{ url_for('contratos') }}" class="dashboard-sidebar-link {% if request.path == url_for('contratos') %}is-active{% endif %}">
+      <i class="fa-solid fa-file-signature"></i>
+      <span>Contratos</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#perfil" class="dashboard-sidebar-link">
+      <i class="fa-regular fa-id-card"></i>
+      <span>Perfil</span>
+    </a>
+    {% elif current_user.role == 'institucional' %}
+    <a href="{{ url_for('institucional_dashboard') }}" class="dashboard-sidebar-link {% if request.path == url_for('institucional_dashboard') or request.path == url_for('dashboard') %}is-active{% endif %}">
+      <i class="fa-solid fa-house"></i>
+      <span>Resumen IMM</span>
+    </a>
+    <a href="{{ url_for('institucional_retiros') }}" class="dashboard-sidebar-link {% if request.path == url_for('institucional_retiros') %}is-active{% endif %}">
+      <i class="fa-solid fa-route"></i>
+      <span>Retiros</span>
+    </a>
+    <a href="{{ url_for('institucional_empresas') }}" class="dashboard-sidebar-link {% if request.path == url_for('institucional_empresas') %}is-active{% endif %}">
+      <i class="fa-solid fa-building"></i>
+      <span>Empresas</span>
+    </a>
+    <a href="{{ url_for('institucional_transportistas') }}" class="dashboard-sidebar-link {% if request.path == url_for('institucional_transportistas') %}is-active{% endif %}">
+      <i class="fa-solid fa-truck"></i>
+      <span>Transportistas</span>
+    </a>
+    <a href="{{ url_for('institucional_documentos') }}" class="dashboard-sidebar-link {% if request.path == url_for('institucional_documentos') %}is-active{% endif %}">
+      <i class="fa-regular fa-folder-open"></i>
+      <span>Documentacion</span>
+    </a>
+    <a href="{{ url_for('institucional_reportes') }}" class="dashboard-sidebar-link {% if request.path == url_for('institucional_reportes') %}is-active{% endif %}">
+      <i class="fa-solid fa-chart-column"></i>
+      <span>Reportes</span>
+    </a>
+    {% else %}
+    <a href="{{ url_for('dashboard') }}" class="dashboard-sidebar-link {% if request.path == url_for('dashboard') %}is-active{% endif %}">
+      <i class="fa-solid fa-house"></i>
+      <span>Resumen</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#sync" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-rotate"></i>
+      <span>Sincronizacion</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#suggestions" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-user-plus"></i>
+      <span>Sugerencias</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#requests" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-list-check"></i>
+      <span>Solicitudes</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#companies" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-building"></i>
+      <span>Empresas</span>
+    </a>
+    <a href="{{ url_for('dashboard') }}#operators" class="dashboard-sidebar-link">
+      <i class="fa-solid fa-truck"></i>
+      <span>Transportistas</span>
+    </a>
+    {% endif %}
+  </nav>
+</aside>

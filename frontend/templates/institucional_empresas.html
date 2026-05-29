@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Empresas | Panel Institucional IMM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Empresas generadoras</h1>
+          </div>
+
+          <section class="surface-card institutional-section-intro">
+            <div>
+              <span class="dashboard-kicker"><i class="fa-solid fa-building"></i> Ecosistema empresarial</span>
+              <h2>Vista resumida de generadores, actividad registrada y foco documental.</h2>
+              <p>Cada tarjeta concentra operativa, respaldo pendiente, tipos de residuos y red de transportistas vinculados.</p>
+            </div>
+          </section>
+
+          <div class="grid-3 institutional-kicker-grid">
+            <article class="info-box institutional-mini-panel mini-panel-ecosystem">
+              <strong>Empresas visibles</strong>
+              <p>{{ empresas_rows|length }} empresa(s) con actividad registrada en el panel.</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-operations">
+              <strong>Actividad cerrada</strong>
+              <p>{{ empresas_rows|sum(attribute='cerrados') }} retiro(s) cerrados entre todas las empresas visibles.</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-docs">
+              <strong>Foco documental</strong>
+              <p>{{ empresas_rows|sum(attribute='pendientes_documentales') }} retiro(s) siguen con respaldo pendiente.</p>
+            </article>
+          </div>
+
+          <div class="institutional-card-list">
+            {% for row in empresas_rows %}
+            <article class="surface-card institutional-entity-card">
+              <div class="institutional-entity-top">
+                <div class="institutional-entity-main">
+                  <div class="institutional-entity-icon">
+                    <i class="fa-solid fa-building"></i>
+                  </div>
+                  <div>
+                    <span class="institutional-entity-kicker">Empresa generadora</span>
+                    <h2>{{ row.empresa }}</h2>
+                    <p>{{ row.direccion_base or row.ubicacion or 'Sin domicilio visible' }}</p>
+                  </div>
+                </div>
+                <div class="institutional-entity-meta">
+                  <span class="status-chip status-chip-neutral">{{ row.rut or 'RUT no cargado' }}</span>
+                  <span class="status-chip status-chip-neutral">{{ row.ubicacion or 'Zona no informada' }}</span>
+                </div>
+              </div>
+
+              <div class="institutional-entity-stats">
+                <div class="institutional-entity-stat">
+                  <span>Retiros</span>
+                  <strong>{{ row.retiros }}</strong>
+                </div>
+                <div class="institutional-entity-stat">
+                  <span>Cerrados</span>
+                  <strong>{{ row.cerrados }}</strong>
+                </div>
+                <div class="institutional-entity-stat">
+                  <span>Pendientes doc.</span>
+                  <strong>{{ row.pendientes_documentales }}</strong>
+                </div>
+                <div class="institutional-entity-stat">
+                  <span>Transportistas</span>
+                  <strong>{{ row.transportistas|length }}</strong>
+                </div>
+              </div>
+
+              <div class="institutional-entity-grid">
+                <section class="institutional-entity-panel">
+                  <strong>Transportistas vinculados</strong>
+                  <div class="institutional-tag-list">
+                    {% for transportista in row.transportistas %}
+                    <span class="institutional-tag">{{ transportista }}</span>
+                    {% else %}
+                    <span class="institutional-tag institutional-tag-muted">Sin vinculos registrados</span>
+                    {% endfor %}
+                  </div>
+                </section>
+
+                <section class="institutional-entity-panel">
+                  <strong>Tipos de residuos</strong>
+                  <div class="institutional-tag-list">
+                    {% for tipo in row.tipos %}
+                    <span class="institutional-tag institutional-tag-soft">{{ tipo }}</span>
+                    {% else %}
+                    <span class="institutional-tag institutional-tag-muted">Sin tipos registrados</span>
+                    {% endfor %}
+                  </div>
+                </section>
+              </div>
+
+              <div class="institutional-entity-footer">
+                <span><i class="fa-regular fa-clock"></i> Ultima actividad: {{ row.ultima_actividad.strftime('%d/%m/%Y %H:%M') if row.ultima_actividad else '-' }}</span>
+                <span><i class="fa-solid fa-folder-open"></i> {{ row.observados }} retiro(s) con observaciones documentales</span>
+              </div>
+            </article>
+            {% else %}
+            <div class="empty-state-card">
+              <i class="fa-regular fa-building"></i>
+              <h3>Sin empresas para mostrar</h3>
+              <p>No hay actividad empresarial visible con los datos actuales del piloto.</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

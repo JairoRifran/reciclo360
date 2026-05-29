@@ -1,0 +1,18 @@
+<html>
+  <body style="font-family: Arial, sans-serif; color: #1d2a2a; line-height: 1.5;">
+    <h2 style="margin-bottom: 8px;">Recordatorio operativo</h2>
+    <p style="margin-top: 0;">{{ title }}</p>
+
+    <div style="padding: 14px 16px; border: 1px solid #d5e3de; border-radius: 12px; background: #f6fbf9;">
+      <p style="margin: 0 0 8px;"><strong>Solicitud:</strong> #{{ solicitud.id }}</p>
+      <p style="margin: 0 0 8px;"><strong>Empresa:</strong> {{ solicitud.empresa }}</p>
+      <p style="margin: 0 0 8px;"><strong>Residuo:</strong> {{ solicitud.tipo }}</p>
+      <p style="margin: 0 0 8px;"><strong>Estado:</strong> {{ solicitud.estado|capitalize }}</p>
+      <p style="margin: 0 0 8px;"><strong>Zona:</strong> {{ solicitud.ubicacion or 'Sin dato' }}</p>
+      <p style="margin: 0;"><strong>Observaciones:</strong> {{ solicitud.observaciones or 'Sin observaciones' }}</p>
+    </div>
+
+    <p style="margin: 16px 0 8px;">{{ body }}</p>
+    <p style="margin: 0;"><strong>Siguiente paso:</strong> {{ next_step }}</p>
+  </body>
+</html>

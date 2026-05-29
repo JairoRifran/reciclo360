@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Retiros | Panel Institucional IMM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Listado de retiros</h1>
+          </div>
+
+          <form method="get" class="filter-grid institutional-filter-grid">
+            <input type="text" name="empresa" value="{{ filters.empresa }}" placeholder="Empresa o RUT">
+            <input type="text" name="transportista" value="{{ filters.transportista }}" placeholder="Transportista">
+            <input type="text" name="zona" value="{{ filters.zona }}" placeholder="Zona">
+            <input type="text" name="tipo" value="{{ filters.tipo }}" placeholder="Tipo de residuo">
+            <select name="estado">
+              <option value="">Todos los estados</option>
+              {% for estado in ['pendiente','aceptada','retirada','completada','rechazada'] %}
+              <option value="{{ estado }}" {% if filters.estado == estado %}selected{% endif %}>{{ estado|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <select name="documental">
+              <option value="">Todo el estado documental</option>
+              {% for value in ['completo','incompleto','pendiente','no_aplicable'] %}
+              <option value="{{ value }}" {% if filters.documental == value %}selected{% endif %}>{{ estado_documental_label(value) }}</option>
+              {% endfor %}
+            </select>
+            <select name="contrato">
+              <option value="">Contrato indistinto</option>
+              <option value="vigente" {% if filters.contrato == 'vigente' %}selected{% endif %}>Contrato vigente</option>
+              <option value="no_vigente" {% if filters.contrato == 'no_vigente' %}selected{% endif %}>Contrato no vigente</option>
+            </select>
+            <div class="institutional-filter-actions">
+              <button type="submit" class="btn btn-primary">Filtrar</button>
+              <a href="{{ url_for('institucional_retiros') }}" class="btn secondary-btn">Limpiar</a>
+            </div>
+          </form>
+
+          <div class="grid-3 institutional-kicker-grid">
+            <article class="info-box institutional-mini-panel mini-panel-operations">
+              <strong>Retiros visibles</strong>
+              <p>{{ solicitudes|length }} coincidencia(s) en la muestra filtrada.</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-alert">
+              <strong>En foco documental</strong>
+              <p>{{ solicitudes|selectattr('estado_documental', 'equalto', 'incompleto')|list|length + solicitudes|selectattr('estado_documental', 'equalto', 'pendiente')|list|length }} retiro(s) con observaciones o faltantes.</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-contracts">
+              <strong>Trazabilidad contractual</strong>
+              <p>{{ solicitudes|selectattr('contrato_vigente')|list|length }} retiro(s) tienen contrato vigente dentro del filtro actual.</p>
+            </article>
+          </div>
+
+          <div class="institutional-table-toolbar">
+            <p>Vista consolidada de retiros con datos operativos, control documental y trazabilidad contractual.</p>
+            <span><i class="fa-solid fa-arrows-left-right"></i> Si lo necesitas, podes desplazar la tabla horizontalmente.</span>
+          </div>
+
+          <div class="table-container institutional-table-shell">
+            <table class="institutional-table institutional-compact-table">
+              <thead>
+                <tr>
+                  <th>Retiro</th>
+                  <th>Empresa</th>
+                  <th>Operacion</th>
+                  <th>Residuo y peso</th>
+                  <th>Control</th>
+                  <th>Destino / zona</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for solicitud in solicitudes %}
+                <tr>
+                  <td>
+                    <a href="{{ url_for('institucional_retiro_detalle', sid=solicitud.id) }}" class="institutional-table-link">#{{ solicitud.id }}</a>
+                    <small>{{ solicitud.fecha_label }}</small>
+                  </td>
+                  <td>
+                    <strong>{{ solicitud.empresa }}</strong>
+                    <small>{{ solicitud.owner.rut if solicitud.owner and solicitud.owner.rut else 'RUT no cargado' }}</small>
+                  </td>
+                  <td>
+                    <strong>{{ solicitud.gestor_nombre }}</strong>
+                    <small>{{ solicitud.gestor_user.numero_habilitacion if solicitud.gestor_user and solicitud.gestor_user.numero_habilitacion else 'Habilitacion no informada' }}</small>
+                    <small>{{ solicitud.vehiculo_matricula or 'Sin matricula' }}</small>
+                  </td>
+                  <td>
+                    <strong>{{ solicitud.tipo }}</strong>
+                    <small>{{ solicitud.categoria_residuo or 'Categoria general' }}</small>
+                    <strong>{% if solicitud.peso_real %}{{ '%.2f'|format(solicitud.peso_real) }}{% else %}{{ '%.2f'|format(solicitud.peso_estimado) }}{% endif %} {{ solicitud.unidad_peso }}</strong>
+                    <small>{% if solicitud.peso_real %}Peso real{% else %}Peso estimado{% endif %}</small>
+                  </td>
+                  <td>
+                    <div class="institutional-chip-stack">
+                      <span class="status-chip status-{{ solicitud.estado }}">{{ solicitud.estado|capitalize }}</span>
+                      <span class="status-chip {% if solicitud.contrato_vigente %}status-chip-success{% else %}status-chip-warning{% endif %}">{{ 'Contrato vigente' if solicitud.contrato_vigente else 'Contrato pendiente' }}</span>
+                      <span class="status-chip status-chip-neutral">{{ estado_documental_label(solicitud.estado_documental) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{{ solicitud.destino_final or solicitud.destino_previsto or 'Sin destino informado' }}</strong>
+                    <small>{{ solicitud.ubicacion }}</small>
+                    <small>{{ solicitud.direccion_retiro or 'Direccion no detallada' }}</small>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center">No hay retiros para ese filtro.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

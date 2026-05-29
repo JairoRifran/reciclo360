@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Mis Solicitudes | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="panel-card">
+      <div class="panel-head inline-head">
+        <div>
+          <h2>Mis solicitudes</h2>
+          <p>Seguimiento claro de cada retiro, del marco legal y de la evolucion economica del servicio.</p>
+        </div>
+        <a href="{{ url_for('solicitar') }}" class="btn">Nueva solicitud</a>
+      </div>
+
+      {% if created_now and selected_solicitud %}
+      <section class="surface-card request-followup-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Tu solicitud ya fue creada</h2>
+            <p>Ahora te mostramos que esta pasando con el retiro #{{ selected_solicitud.id }} y que falta para que pueda ejecutarse.</p>
+          </div>
+          <span class="status-chip {% if contract_ready %}status-aceptada{% else %}status-pendiente{% endif %}">
+            {% if contract_ready %}Lista para avanzar{% else %}Requiere contrato marco{% endif %}
+          </span>
+        </div>
+
+        <div class="request-followup-grid">
+          <div class="request-followup-step is-done">
+            <div class="request-followup-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <strong>1. Solicitud creada</strong>
+            <span>El retiro ya quedo registrado con operador, direccion, costo y categoria.</span>
+          </div>
+          <div class="request-followup-step {% if selected_solicitud.contrato_vigente %}is-done{% else %}is-pending{% endif %}">
+            <div class="request-followup-icon"><i class="fa-solid fa-file-signature"></i></div>
+            <strong>2. Contrato marco</strong>
+            <span>
+              {% if selected_solicitud.contrato_vigente %}
+              Ya existe un vinculo vigente con {{ selected_solicitud.gestor_nombre }}.
+              {% else %}
+              Todavia falta dejar vigente el contrato marco con {{ selected_solicitud.gestor_nombre }}.
+              {% endif %}
+            </span>
+          </div>
+          <div class="request-followup-step {% if selected_solicitud.contrato_vigente %}is-active{% else %}is-muted{% endif %}">
+            <div class="request-followup-icon"><i class="fa-solid fa-handshake-angle"></i></div>
+            <strong>3. Aceptacion del operador</strong>
+            <span>Cuando el marco este vigente, el transportista podra aceptar la orden de servicio.</span>
+          </div>
+          <div class="request-followup-step is-muted">
+            <div class="request-followup-icon"><i class="fa-solid fa-truck-fast"></i></div>
+            <strong>4. Retiro y cierre</strong>
+            <span>Despues vendran retiro, peso real, destino y respaldo documental.</span>
+          </div>
+        </div>
+
+        <div class="request-detail-panels">
+          <div class="info-box">
+            <strong>Que ya hizo Residuos 360</strong>
+            <p>Genero la orden de servicio del retiro y la vinculo al operador {{ selected_solicitud.gestor_nombre }}.</p>
+            <p>Estado actual de la orden: <strong>{{ order_state_label(selected_solicitud.orden_servicio_estado) }}</strong>.</p>
+          </div>
+          <div class="info-box">
+            <strong>Lectura economica del retiro</strong>
+            <p>Estado economico: <strong>{{ economic_state_label(selected_solicitud.estado_economico) }}</strong>.</p>
+            <p>Cotizacion estimada: <strong>UYU {{ '%.2f'|format(selected_solicitud.total_estimado_display) }}</strong>.</p>
+            {% if selected_solicitud.total_final_display is not none %}
+            <p>Total final validado: <strong>UYU {{ '%.2f'|format(selected_solicitud.total_final_display) }}</strong>.</p>
+            {% else %}
+            <p>El total final se confirma cuando el operador cierre el retiro con peso real y respaldo.</p>
+            {% endif %}
+          </div>
+          <div class="info-box">
+            <strong>Que tiene que hacer tu empresa ahora</strong>
+            {% if selected_solicitud.contrato_vigente %}
+            <p>No necesitas intervenir en lo legal para este retiro. Ahora solo queda esperar la aceptacion del operador.</p>
+            {% else %}
+            <p>Entrar al modulo de contratos, revisar el borrador, cargar el PDF firmado por tu empresa y dejar el marco listo para que el operador complete su firma.</p>
+            {% endif %}
+          </div>
+          <div class="info-box">
+            <strong>Que hara el operador despues</strong>
+            <p>Cuando el contrato este vigente, podra aceptar el retiro, ejecutarlo y subir peso, destino y comprobantes.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-actions dashboard-actions-tight">
+          {% if selected_contract %}
+          <a href="{{ url_for('contratos') }}#contrato-{{ selected_contract.id }}" class="btn btn-primary">
+            <i class="fa-solid fa-file-signature"></i>
+            {% if selected_solicitud.contrato_vigente %}Ver contrato marco{% else %}Completar contrato marco{% endif %}
+          </a>
+          {% endif %}
+          <a href="{{ url_for('documentos') }}" class="btn secondary-btn"><i class="fa-regular fa-folder-open"></i> Centro documental</a>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if solicitudes %}
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Residuo</th>
+              <th>Peso estimado</th>
+              <th>Transportista</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Marco legal</th>
+              <th>Control</th>
+              <th>Proximo paso</th>
+              <th>Destino</th>
+              <th>Documentos</th>
+              <th class="amount-col">Economia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in solicitudes %}
+            <tr {% if selected_solicitud and selected_solicitud.id == s.id %}class="table-row-focus"{% endif %}>
+              <td>#{{ s.id }}</td>
+              <td>{{ s.tipo }}</td>
+              <td>{{ '%.2f'|format(s.peso_estimado) }} kg</td>
+              <td>{{ s.gestor_nombre }}</td>
+              <td>{{ s.fecha_label }}</td>
+              <td><span class="status-chip status-{{ s.estado }}">{{ s.estado|capitalize }}</span></td>
+              <td>
+                {% if s.contrato_vigente %}
+                <span class="status-chip status-aceptada">Contrato vigente</span>
+                {% else %}
+                <span class="status-chip status-pendiente">Contrato pendiente</span>
+                {% endif %}
+                <div class="mini-meta-line">{{ order_state_label(s.orden_servicio_estado) }}</div>
+              </td>
+              <td>
+                {% if s.nivel_riesgo == 'alto' %}
+                <span class="status-chip status-rechazada">Requiere trazabilidad reforzada</span>
+                {% elif s.alerta_peso %}
+                <span class="status-chip status-pendiente">Desvio {{ s.desvio_peso_pct }}%</span>
+                {% else %}
+                <span class="status-chip status-aceptada">Normal</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.estado == 'pendiente' %}
+                  {% if s.contrato_vigente %}
+                  Esperando respuesta del operador
+                  {% else %}
+                  Completar contrato marco y esperar firma del transportista
+                  {% endif %}
+                {% elif s.estado == 'aceptada' %}
+                Operador confirmado, pendiente de retiro
+                {% elif s.estado == 'retirada' %}
+                Retiro realizado, esperando cierre y respaldo
+                {% elif s.estado == 'completada' %}
+                Revisar cierre y descargar respaldo
+                {% else %}
+                Reasignar o volver a cargar
+                {% endif %}
+              </td>
+              <td>{{ s.destino_final or '-' }}</td>
+              <td>
+                <div class="doc-links">
+                  {% if s.comprobante_peso %}<a href="{{ s.comprobante_peso }}" target="_blank">Peso</a>{% endif %}
+                  {% if s.evidencia_retiro %}<a href="{{ s.evidencia_retiro }}" target="_blank">Retiro</a>{% endif %}
+                  {% if s.certificado_destino %}<a href="{{ s.certificado_destino }}" target="_blank">Destino</a>{% endif %}
+                  {% if not s.comprobante_peso and not s.evidencia_retiro and not s.certificado_destino %}-{% endif %}
+                </div>
+              </td>
+              <td class="amount-cell">
+                <div class="economic-cell">
+                  <span class="status-chip status-chip-neutral">{{ economic_state_label(s.estado_economico) }}</span>
+                  <div class="economic-line">Estimado: <strong>UYU {{ '%.2f'|format(s.total_estimado_display) }}</strong></div>
+                  {% if s.total_final_display is not none %}
+                  <div class="economic-line">Final: <strong>UYU {{ '%.2f'|format(s.total_final_display) }}</strong></div>
+                  {% else %}
+                  <div class="economic-line">Final pendiente</div>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <p>Todavia no cargaste solicitudes.</p>
+        <a href="{{ url_for('solicitar') }}" class="btn">Crear la primera</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,778 @@
+{% extends "base.html" %}
+{% block title %}Solicitar Retiro | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h2>Solicitar retiro</h2>
+          <p>Ahora el alta se hace con un asistente guiado: vas completando un dato por vez y al final revisas contrato, operador y costo antes de enviar.</p>
+        </div>
+        <button type="button" class="btn secondary-btn" id="reopen-request-modal">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Abrir asistente
+        </button>
+      </div>
+
+      <div class="grid-3 request-steps request-flow-cards">
+        <div class="info-box request-flow-card">
+          <div class="request-flow-icon"><i class="fa-solid fa-recycle"></i></div>
+          <strong>Residuo y origen</strong>
+          <p>Definimos que se retira y desde donde sale.</p>
+        </div>
+        <div class="info-box request-flow-card">
+          <div class="request-flow-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
+          <strong>Operador y contrato</strong>
+          <p>Te mostramos cobertura, habilitacion y marco legal.</p>
+        </div>
+        <div class="info-box request-flow-card">
+          <div class="request-flow-icon"><i class="fa-solid fa-paper-plane"></i></div>
+          <strong>Revision final</strong>
+          <p>Confirmas orden de servicio y costo estimado.</p>
+        </div>
+      </div>
+
+      {% if gestores_activos %}
+      <div class="request-assistant-summary">
+        <div class="info-box">
+          <strong><i class="fa-solid fa-circle-info"></i> Como funciona</strong>
+          <p>El asistente se abre arriba de la pantalla y te va guiando paso a paso. Si lo cerras, podes retomarlo desde el boton <em>Abrir asistente</em>.</p>
+        </div>
+        <div class="request-compact-banner request-legal-banner">
+          <div class="request-compact-chip">
+            <i class="fa-solid fa-file-signature"></i>
+            <span>Contrato marco por transportista</span>
+          </div>
+          <div class="request-compact-chip">
+            <i class="fa-solid fa-clipboard-list"></i>
+            <span>Orden de servicio por retiro</span>
+          </div>
+          <div class="request-compact-chip">
+            <i class="fa-solid fa-folder-tree"></i>
+            <span>Cierre documental trazable</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="request-modal-overlay" id="request-modal-overlay">
+        <div class="request-modal-shell">
+          <form action="{{ url_for('solicitar') }}" method="post" class="stack-form request-modal-form" id="request-modal-form">
+            <input id="empresa" type="hidden" name="empresa" value="{{ current_user.nombre_visible }}">
+            <input type="hidden" id="gestor_id" name="gestor_id" value="">
+
+            <div class="request-modal-head">
+              <div>
+                <span class="dashboard-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> Asistente de alta</span>
+                <h3 id="request-modal-title">¿Que residuo quieres retirar?</h3>
+                <p id="request-modal-copy">Vamos paso a paso para cargar este retiro sin perderte entre tantos campos.</p>
+              </div>
+              <button type="button" class="request-modal-close" id="close-request-modal" aria-label="Cerrar asistente">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div class="request-modal-progress">
+              <div class="request-modal-progress-bar">
+                <span id="request-modal-progress-fill"></span>
+              </div>
+              <small id="request-modal-progress-label">Paso 1 de 8</small>
+            </div>
+
+            <section class="request-modal-step is-active" data-modal-step="1">
+              <label for="tipo">Tipo de residuo</label>
+              <select id="tipo" name="tipo" required>
+                <option value="">Selecciona...</option>
+                {% for tipo in tipos %}
+                <option
+                  value="{{ tipo.key }}"
+                  data-risk="{{ tipo.risk }}"
+                  data-certificate="{{ 1 if tipo.requires_certificate else 0 }}"
+                  data-description="{{ tipo.description }}"
+                  data-family="{{ tipo.family }}"
+                  data-normative="{{ tipo.normative_hint }}"
+                >
+                  {{ tipo.label }}
+                </option>
+                {% endfor %}
+              </select>
+              <div class="request-modal-tip">
+                <i class="fa-solid fa-recycle"></i>
+                <p>Elegimos primero el residuo para filtrar operadores compatibles y definir la trazabilidad documental que va a pedir el cierre.</p>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="2" hidden>
+              <label for="direccion_retiro">Direccion de retiro</label>
+              <input id="direccion_retiro" type="text" name="direccion_retiro" placeholder="Ej. Bulevar Artigas 1825, deposito trasero" required>
+              <div class="request-modal-tip">
+                <i class="fa-solid fa-warehouse"></i>
+                <p>Esta direccion va a quedar en la orden de servicio, en la constancia de retiro y en el expediente documental.</p>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="3" hidden>
+              <label for="ubicacion">Zona o localidad</label>
+              <input id="ubicacion" type="text" name="ubicacion" value="{{ current_user.ubicacion or '' }}" placeholder="Ej. Montevideo, Pocitos, Canelones" required>
+              <div class="request-modal-tip">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <p>La zona nos ayuda a encontrar operadores con mejor cobertura y mostrar el sugerido mas razonable.</p>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="4" hidden>
+              <label for="peso_estimado">Peso estimado (kg)</label>
+              <input id="peso_estimado" type="number" name="peso_estimado" step="0.01" min="0.01" required>
+              <div class="request-modal-tip">
+                <i class="fa-solid fa-weight-hanging"></i>
+                <p>El peso estimado nos sirve para calcular costo, tratamiento y controlar despues los desvios contra el peso real.</p>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="5" hidden>
+              <div class="grid-2">
+                <div>
+                  <label for="volumen_estimado_m3">Volumen estimado (m3)</label>
+                  <input id="volumen_estimado_m3" type="number" name="volumen_estimado_m3" step="0.01" min="0" placeholder="Opcional">
+                </div>
+                <div>
+                  <label for="distancia_km">Distancia estimada (km)</label>
+                  <input id="distancia_km" type="number" name="distancia_km" step="0.1" min="0" placeholder="Opcional">
+                </div>
+              </div>
+              <div class="request-modal-tip">
+                <i class="fa-solid fa-route"></i>
+                <p>Estos datos son opcionales, pero mejoran bastante la estimacion del servicio y la comparacion entre operadores.</p>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="6" hidden>
+              <div class="grid-2">
+                <div>
+                  <label for="fecha">Fecha deseada</label>
+                  <input id="fecha" type="date" name="fecha" value="{{ now().strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div>
+                  <label for="franja_horaria">Franja horaria preferida</label>
+                  <select id="franja_horaria" name="franja_horaria" required>
+                    <option value="">Selecciona...</option>
+                    {% for slot in time_windows %}
+                    <option value="{{ slot }}">{{ slot }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+              <div class="request-modal-tip">
+                <i class="fa-solid fa-calendar-day"></i>
+                <p>La programacion del retiro queda asociada a la solicitud y luego pasa a la orden de servicio para que el operador coordine mejor la visita.</p>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="7" hidden>
+              <div id="recommended-box" class="info-box request-highlight-box"{% if not recommended_gestor %} hidden{% endif %}>
+                {% if recommended_gestor %}
+                <strong><i class="fa-solid fa-star"></i> Operador sugerido</strong>
+                <p>{{ recommended_gestor.nombre_visible }} · {{ recommended_gestor.ubicacion or 'Sin zona cargada' }}</p>
+                <p>Base de retiro: UYU {{ '%.2f'|format(recommended_gestor.tarifa_base_retiro_uyu or 0) }} · Estado: {{ recommended_gestor.ministerio_estado or 'Verificado en listado oficial' }}</p>
+                {% endif %}
+              </div>
+
+              <label for="gestor">Operador disponible</label>
+              <select id="gestor" name="gestor" required>
+                <option value="">Selecciona...</option>
+                {% for gestor in gestores_activos %}
+                <option
+                  value="{{ gestor.email }}"
+                  data-id="{{ gestor.id }}"
+                  data-tarifa="{{ gestor.tarifa_por_kg }}"
+                  data-zona="{{ gestor.ubicacion or 'Sin definir' }}"
+                  data-zonas-cobertura="{{ gestor.zonas_cobertura or '' }}"
+                  data-radio-cobertura="{{ gestor.radio_cobertura_km or 0 }}"
+                  data-habilitacion="{{ gestor.numero_habilitacion or 'No informada' }}"
+                  data-modalidad="{{ gestor.ministerio_modalidad or '' }}"
+                  data-categorias="{{ gestor.ministerio_categorias or '' }}"
+                  data-capabilities="{{ (gestor.categorias_residuo or '')|lower }}"
+                  data-verificado="{{ 1 if gestor.verificado_ministerio else 0 }}"
+                  data-base-retiro="{{ gestor.tarifa_base_retiro_uyu or 0 }}"
+                  data-tarifa-km="{{ gestor.tarifa_km_uyu or 0 }}"
+                  data-tarifa-m3="{{ gestor.tarifa_m3_uyu or 0 }}"
+                  data-tarifa-tratamiento="{{ gestor.tarifa_tratamiento_kg_uyu or 0 }}"
+                  data-certificado="{{ gestor.costo_certificado_uyu or 0 }}"
+                  data-moneda="{{ gestor.moneda_tarifa or 'UYU' }}"
+                  data-contract-id="{{ gestor.preview_contract_id or '' }}"
+                  data-contract-state="{{ gestor.preview_contract_state or 'pendiente_datos' }}"
+                  data-contract-label="{{ gestor.preview_contract_label or 'Pendiente de datos' }}"
+                  data-contract-vigente="{{ 1 if gestor.preview_contract_vigente else 0 }}"
+                  data-contract-until="{{ gestor.preview_contract_until or '' }}"
+                >
+                  {{ gestor.nombre_visible }} - {{ gestor.ubicacion or 'Sin definir' }} - Base UYU {{ '%.0f'|format(gestor.tarifa_base_retiro_uyu or 0) }}
+                </option>
+                {% endfor %}
+              </select>
+
+              <div id="gestor-detail" class="info-box" hidden>
+                <strong id="gestor-name"></strong>
+                <p id="gestor-zone"></p>
+                <p id="gestor-coverage-row" hidden>Cobertura: <span id="gestor-coverage"></span></p>
+                <p>Base de retiro: <span id="gestor-rate"></span></p>
+                <p>Habilitacion: <span id="gestor-license"></span></p>
+                <p id="gestor-category-row" hidden>Categorias: <span id="gestor-category"></span></p>
+                <p id="gestor-mode-row" hidden>Modalidad: <span id="gestor-mode"></span></p>
+              </div>
+
+              <div class="info-box request-mini-tip request-contract-tip">
+                <div class="request-mini-tip-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                <div>
+                  <strong>Marco legal del retiro</strong>
+                  <p>Si todavia no existe contrato marco vigente con el operador elegido, la solicitud se crea igual pero queda bloqueada hasta dejar ese vinculo formal activo.</p>
+                </div>
+              </div>
+
+              <div id="contract-preview" class="info-box request-contract-preview" hidden>
+                <div class="request-section-head">
+                  <div>
+                    <strong><i class="fa-solid fa-file-signature"></i> Previsualizacion legal del retiro</strong>
+                    <p>Revisa el contrato marco con el operador y la orden de servicio que se generara para este retiro.</p>
+                  </div>
+                </div>
+                <div id="contract-preview-banner" class="request-contract-banner is-pending">
+                  <div class="request-contract-banner-icon"><i class="fa-solid fa-shield-check"></i></div>
+                  <div>
+                    <strong id="contract-preview-banner-title">Contrato pendiente de activacion</strong>
+                    <p id="contract-preview-banner-copy">Todavia falta dejar vigente el marco legal con este operador para que el retiro pueda confirmarse.</p>
+                  </div>
+                </div>
+                <div class="request-contract-grid">
+                  <div class="request-contract-box">
+                    <span class="mini-label">Contrato marco</span>
+                    <div class="request-contract-state-row">
+                      <strong id="contract-preview-operator">Selecciona un operador</strong>
+                      <span id="contract-preview-state" class="status-chip status-chip-neutral">Pendiente</span>
+                    </div>
+                    <p id="contract-preview-copy" class="request-contract-copy">El contrato marco une a tu empresa con el transportista habilitado y es la base legal para futuros retiros.</p>
+                    <div class="mini-meta-line">
+                      <span><i class="fa-solid fa-building"></i> {{ current_user.nombre_visible }}</span>
+                      <span id="contract-preview-until"><i class="fa-solid fa-calendar-check"></i> Vigencia por definir</span>
+                    </div>
+                    <div class="request-contract-actions">
+                      <a id="contract-preview-link" class="btn secondary-btn" href="#" target="_blank" rel="noopener">
+                        <i class="fa-regular fa-file-lines"></i> Ver contrato
+                      </a>
+                    </div>
+                  </div>
+                  <div class="request-contract-box">
+                    <span class="mini-label">Orden de servicio</span>
+                    <strong id="order-preview-title">Se generara al enviar la solicitud</strong>
+                    <p id="order-preview-copy" class="request-contract-copy">Va a incluir el residuo, direccion, fecha, cantidad estimada y condiciones de este retiro puntual.</p>
+                    <div class="mini-meta-line">
+                      <span id="order-preview-residue"><i class="fa-solid fa-recycle"></i> Residuo por definir</span>
+                      <span id="order-preview-origin"><i class="fa-solid fa-location-dot"></i> Origen pendiente</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="request-modal-step" data-modal-step="8" hidden>
+              <label for="observaciones">Indicaciones para el retiro</label>
+              <input id="observaciones" type="text" name="observaciones" placeholder="Ej. retirar en muelle 2, coordinar con mantenimiento">
+
+              <div id="risk-box" class="info-box" hidden>
+                <strong id="risk-title"></strong>
+                <p id="risk-copy"></p>
+              </div>
+
+              <div id="price-preview" class="info-box fiscal-preview" hidden>
+                <strong><i class="fa-solid fa-receipt"></i> Cotizacion estimada</strong>
+                <div class="preview-breakdown">
+                  <p>Transporte base: <span id="preview-transport-base">UYU 0.00</span></p>
+                  <p>Distancia: <span id="preview-transport-km">UYU 0.00</span></p>
+                  <p>Carga / volumen: <span id="preview-transport-load">UYU 0.00</span></p>
+                  <p>Gestion / tratamiento: <span id="preview-management">UYU 0.00</span></p>
+                  <p>Certificado: <span id="preview-certificate">UYU 0.00</span></p>
+                  <p>Fee plataforma: <span id="preview-platform">UYU 0.00</span></p>
+                  <p>Subtotal neto: <strong id="preview-subtotal">UYU 0.00</strong></p>
+                  <p>IVA (22%): <span id="preview-iva">UYU 0.00</span></p>
+                  <p>Total estimado: <strong id="preview-total">UYU 0.00</strong></p>
+                  <p>Comprobante sugerido: <span id="preview-cfe">eFactura</span></p>
+                </div>
+              </div>
+            </section>
+
+            <div class="request-modal-actions">
+              <button type="button" class="btn secondary-btn" id="request-modal-prev">
+                <i class="fa-solid fa-arrow-left"></i> Volver
+              </button>
+              <button type="button" class="btn" id="request-modal-next">
+                Siguiente <i class="fa-solid fa-arrow-right"></i>
+              </button>
+              <button type="submit" class="btn" id="request-modal-submit" hidden>
+                <i class="fa-solid fa-paper-plane"></i> Enviar solicitud
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <p>No hay transportistas activos todavia.</p>
+        <p>Importa o activa al menos un operador desde el panel admin para empezar a tomar retiros.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const IVA_RATE = 0.22;
+    const PLATFORM_RATE = {{ current_user.plan.commission_rate if current_user.plan else 0.20 }};
+    const modalOverlay = document.getElementById('request-modal-overlay');
+    const modalForm = document.getElementById('request-modal-form');
+    const reopenModal = document.getElementById('reopen-request-modal');
+    const closeModal = document.getElementById('close-request-modal');
+    const modalTitle = document.getElementById('request-modal-title');
+    const modalCopy = document.getElementById('request-modal-copy');
+    const progressFill = document.getElementById('request-modal-progress-fill');
+    const progressLabel = document.getElementById('request-modal-progress-label');
+    const prevButton = document.getElementById('request-modal-prev');
+    const nextButton = document.getElementById('request-modal-next');
+    const submitButton = document.getElementById('request-modal-submit');
+    const steps = Array.from(document.querySelectorAll('.request-modal-step'));
+
+    const gestorSelect = document.getElementById('gestor');
+    const gestorId = document.getElementById('gestor_id');
+    const tipoSelect = document.getElementById('tipo');
+    const pesoInput = document.getElementById('peso_estimado');
+    const volumenInput = document.getElementById('volumen_estimado_m3');
+    const distanciaInput = document.getElementById('distancia_km');
+    const fechaInput = document.getElementById('fecha');
+    const franjaInput = document.getElementById('franja_horaria');
+    const ubicacionInput = document.getElementById('ubicacion');
+    const direccionInput = document.getElementById('direccion_retiro');
+    const recommendedBox = document.getElementById('recommended-box');
+    const detail = document.getElementById('gestor-detail');
+    const detailName = document.getElementById('gestor-name');
+    const detailZone = document.getElementById('gestor-zone');
+    const detailCoverage = document.getElementById('gestor-coverage');
+    const detailCoverageRow = document.getElementById('gestor-coverage-row');
+    const detailRate = document.getElementById('gestor-rate');
+    const detailLicense = document.getElementById('gestor-license');
+    const detailCategory = document.getElementById('gestor-category');
+    const detailCategoryRow = document.getElementById('gestor-category-row');
+    const detailMode = document.getElementById('gestor-mode');
+    const detailModeRow = document.getElementById('gestor-mode-row');
+    const preview = document.getElementById('price-preview');
+    const riskBox = document.getElementById('risk-box');
+    const riskTitle = document.getElementById('risk-title');
+    const riskCopy = document.getElementById('risk-copy');
+    const contractPreview = document.getElementById('contract-preview');
+    const contractPreviewOperator = document.getElementById('contract-preview-operator');
+    const contractPreviewState = document.getElementById('contract-preview-state');
+    const contractPreviewCopy = document.getElementById('contract-preview-copy');
+    const contractPreviewUntil = document.getElementById('contract-preview-until');
+    const contractPreviewBanner = document.getElementById('contract-preview-banner');
+    const contractPreviewBannerTitle = document.getElementById('contract-preview-banner-title');
+    const contractPreviewBannerCopy = document.getElementById('contract-preview-banner-copy');
+    const contractPreviewLink = document.getElementById('contract-preview-link');
+    const orderPreviewTitle = document.getElementById('order-preview-title');
+    const orderPreviewCopy = document.getElementById('order-preview-copy');
+    const orderPreviewResidue = document.getElementById('order-preview-residue');
+    const orderPreviewOrigin = document.getElementById('order-preview-origin');
+    const contractPreviewBaseUrl = "{{ url_for('contrato_preview', gestor_id=999999) }}";
+
+    const previewNodes = {
+      transportBase: document.getElementById('preview-transport-base'),
+      transportKm: document.getElementById('preview-transport-km'),
+      transportLoad: document.getElementById('preview-transport-load'),
+      management: document.getElementById('preview-management'),
+      certificate: document.getElementById('preview-certificate'),
+      platform: document.getElementById('preview-platform'),
+      subtotal: document.getElementById('preview-subtotal'),
+      iva: document.getElementById('preview-iva'),
+      total: document.getElementById('preview-total'),
+      cfe: document.getElementById('preview-cfe')
+    };
+
+    if (!modalForm || !gestorSelect) return;
+
+    const allGestorOptions = Array.from(gestorSelect.options).slice(1).map((option) => ({
+      value: option.value,
+      text: option.textContent,
+      dataset: { ...option.dataset },
+    }));
+
+    const stepMeta = {
+      1: { title: '¿Que residuo quieres retirar?', copy: 'Elegimos el tipo de residuo para filtrar operadores compatibles y definir la trazabilidad del cierre.' },
+      2: { title: '¿Desde donde sale el retiro?', copy: 'La direccion exacta queda en la orden de servicio, la constancia de retiro y el expediente documental.' },
+      3: { title: '¿En que zona se encuentra?', copy: 'La zona nos ayuda a encontrar operadores con mejor cobertura y sugerir el mas razonable.' },
+      4: { title: '¿Cuanto peso estimas?', copy: 'Con el peso estimado podemos calcular costo, tratamiento y despues controlar desvio contra el peso real.' },
+      5: { title: '¿Tienes mas datos del retiro?', copy: 'Volumen y distancia son opcionales, pero mejoran bastante la estimacion del servicio.' },
+      6: { title: '¿Para cuando lo necesitas?', copy: 'La fecha forma parte de la solicitud y luego queda asociada a la orden de servicio.' },
+      7: { title: 'Elegi el operador', copy: 'En este paso revisas cobertura, habilitacion y el estado del contrato marco con ese transportista.' },
+      8: { title: 'Revisa y envia', copy: 'Ultimo paso: agregas indicaciones, revisas riesgo y costo estimado, y envias la solicitud.' }
+    };
+
+    let currentStep = 1;
+
+    function normalizeText(value) {
+      return (value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function money(value) {
+      return `UYU ${Number(value || 0).toFixed(2)}`;
+    }
+
+    function openModal() {
+      modalOverlay.classList.add('is-open');
+      document.body.classList.add('modal-open');
+    }
+
+    function closeWizard() {
+      modalOverlay.classList.remove('is-open');
+      document.body.classList.remove('modal-open');
+    }
+
+    function updateStepMeta(step) {
+      const meta = stepMeta[step];
+      modalTitle.textContent = meta.title;
+      modalCopy.textContent = meta.copy;
+      progressFill.style.width = `${(step / steps.length) * 100}%`;
+      progressLabel.textContent = `Paso ${step} de ${steps.length}`;
+      prevButton.hidden = step === 1;
+      nextButton.hidden = step === steps.length;
+      submitButton.hidden = step !== steps.length;
+    }
+
+    function showStep(step) {
+      currentStep = step;
+      steps.forEach((item) => {
+        const matches = Number(item.dataset.modalStep) === step;
+        item.hidden = !matches;
+        item.classList.toggle('is-active', matches);
+      });
+      updateStepMeta(step);
+    }
+
+    function validateStep(step) {
+      const stepNode = document.querySelector(`.request-modal-step[data-modal-step="${step}"]`);
+      if (!stepNode) return true;
+      const requiredFields = Array.from(stepNode.querySelectorAll('input[required], select[required], textarea[required]'));
+      for (const field of requiredFields) {
+        if (!field.checkValidity()) {
+          field.reportValidity();
+          field.focus();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function locationQuery() {
+      return [ubicacionInput?.value || '', direccionInput?.value || '']
+        .map(normalizeText)
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    function residueKey() {
+      return tipoSelect?.value || '';
+    }
+
+    function optionMatchesLocation(option, query) {
+      if (!query) return true;
+      const labels = [option.dataset.zona || '', option.dataset.zonasCobertura || '']
+        .join(' ')
+        .split(',')
+        .map((item) => normalizeText(item))
+        .filter(Boolean);
+      if (!labels.length) return false;
+      if (labels.some((label) => query.includes(label) || label.includes(query))) return true;
+      const queryTokens = query.split(/\s+/).filter((token) => token.length >= 3);
+      return labels.some((label) => {
+        const labelTokens = label.split(/\s+/).filter((token) => token.length >= 3);
+        return queryTokens.some((token) => labelTokens.includes(token));
+      });
+    }
+
+    function optionMatchesResidue(option, key) {
+      if (!key) return true;
+      const capabilities = (option.dataset.capabilities || '').split(',').map((item) => item.trim()).filter(Boolean);
+      if (!capabilities.length) return true;
+      return capabilities.includes(key);
+    }
+
+    function filteredOptions() {
+      const query = locationQuery();
+      const key = residueKey();
+      return allGestorOptions.filter((option) => optionMatchesResidue(option, key) && optionMatchesLocation(option, query));
+    }
+
+    function pickRecommended(options) {
+      if (!options.length) return null;
+      return [...options].sort((a, b) => {
+        const verifiedA = Number(a.dataset.verificado || '0');
+        const verifiedB = Number(b.dataset.verificado || '0');
+        if (verifiedA !== verifiedB) return verifiedB - verifiedA;
+        return parseFloat(a.dataset.baseRetiro || '0') - parseFloat(b.dataset.baseRetiro || '0');
+      })[0];
+    }
+
+    function renderGestorOptions() {
+      const currentValue = gestorSelect.value;
+      const options = filteredOptions();
+      gestorSelect.innerHTML = '<option value="">Selecciona...</option>' + options.map((option) => `
+        <option
+          value="${option.value}"
+          data-id="${option.dataset.id || ''}"
+          data-tarifa="${option.dataset.tarifa || ''}"
+          data-zona="${option.dataset.zona || ''}"
+          data-zonas-cobertura="${option.dataset.zonasCobertura || ''}"
+          data-radio-cobertura="${option.dataset.radioCobertura || '0'}"
+          data-habilitacion="${option.dataset.habilitacion || ''}"
+          data-modalidad="${option.dataset.modalidad || ''}"
+          data-categorias="${option.dataset.categorias || ''}"
+          data-capabilities="${option.dataset.capabilities || ''}"
+          data-verificado="${option.dataset.verificado || '0'}"
+          data-base-retiro="${option.dataset.baseRetiro || '0'}"
+          data-tarifa-km="${option.dataset.tarifaKm || '0'}"
+          data-tarifa-m3="${option.dataset.tarifaM3 || '0'}"
+          data-tarifa-tratamiento="${option.dataset.tarifaTratamiento || '0'}"
+          data-certificado="${option.dataset.certificado || '0'}"
+          data-moneda="${option.dataset.moneda || 'UYU'}"
+          data-contract-id="${option.dataset.contractId || ''}"
+          data-contract-state="${option.dataset.contractState || 'pendiente_datos'}"
+          data-contract-label="${option.dataset.contractLabel || 'Pendiente de datos'}"
+          data-contract-vigente="${option.dataset.contractVigente || '0'}"
+          data-contract-until="${option.dataset.contractUntil || ''}"
+        >${option.text}</option>
+      `).join('');
+
+      if (options.some((option) => option.value === currentValue)) {
+        gestorSelect.value = currentValue;
+      }
+      if (!gestorSelect.value) {
+        gestorId.value = '';
+        detail.hidden = true;
+      }
+      return options;
+    }
+
+    function selectedOption() {
+      return gestorSelect.options[gestorSelect.selectedIndex] || null;
+    }
+
+    function selectedResidue() {
+      return tipoSelect.options[tipoSelect.selectedIndex] || null;
+    }
+
+    function activeOperatorData() {
+      const option = selectedOption();
+      if (option && option.value) return option.dataset;
+      const recommendation = pickRecommended(filteredOptions());
+      return recommendation ? recommendation.dataset : null;
+    }
+
+    function updateRiskBox() {
+      const residue = selectedResidue();
+      if (!residue || !residue.value) {
+        riskBox.hidden = true;
+        return;
+      }
+      const risk = residue.dataset.risk || 'medio';
+      const needsCertificate = residue.dataset.certificate === '1';
+      const family = residue.dataset.family || '';
+      const normative = residue.dataset.normative || '';
+      const description = residue.dataset.description || '';
+      riskTitle.textContent = `Nivel de riesgo: ${risk} · Familia: ${family}`;
+      riskCopy.textContent = needsCertificate
+        ? `${description} Requiere certificado o manifiesto de destino final. Base orientativa: ${normative}.`
+        : `${description} Te vamos a pedir respaldo operativo del retiro y comprobante de peso. Base orientativa: ${normative}.`;
+      riskBox.hidden = false;
+    }
+
+    function updateRecommendedBox(options) {
+      const recommendation = pickRecommended(options || filteredOptions());
+      if (!recommendation) {
+        recommendedBox.innerHTML = `
+          <strong>Sin coincidencias por zona</strong>
+          <p>No encontramos operadores compatibles con la ubicacion cargada. Podes ajustar la zona o elegir manualmente.</p>
+        `;
+        recommendedBox.hidden = false;
+        return;
+      }
+      const officialStatus = recommendation.dataset.categorias || recommendation.dataset.modalidad || 'Operador activo en plataforma';
+      const coverage = recommendation.dataset.zonasCobertura || recommendation.dataset.zona || 'Sin zona cargada';
+      const radius = Number(recommendation.dataset.radioCobertura || '0');
+      recommendedBox.innerHTML = `
+        <strong><i class="fa-solid fa-star"></i> Operador sugerido</strong>
+        <p>${recommendation.text}</p>
+        <p>Zona: ${recommendation.dataset.zona || 'Sin zona cargada'}</p>
+        <p>Cobertura declarada: ${coverage}${radius > 0 ? ` · Radio ${radius.toFixed(0)} km` : ''}</p>
+        <p>Referencia: ${officialStatus}</p>
+      `;
+      recommendedBox.hidden = false;
+    }
+
+    function updateAssignmentUI() {
+      const options = renderGestorOptions();
+      updateRecommendedBox(options);
+      if (!gestorSelect.value && options.length) {
+        const recommendation = pickRecommended(options);
+        if (recommendation) gestorSelect.value = recommendation.value;
+      }
+      updatePreview();
+    }
+
+    function updateContractPreview(option, residue) {
+      if (!contractPreview || !option || !option.value) return;
+      const contractIsVigente = option.dataset.contractVigente === '1';
+      const contractState = option.dataset.contractState || 'pendiente_datos';
+      const contractLabel = option.dataset.contractLabel || 'Pendiente de datos';
+      const untilLabel = option.dataset.contractUntil ? `Vigente hasta ${option.dataset.contractUntil}` : 'Vigencia por definir';
+      const residueLabel = residue && residue.value ? residue.textContent.trim() : 'Residuo por definir';
+      const originLabel = [direccionInput?.value || '', ubicacionInput?.value || ''].filter(Boolean).join(' · ') || 'Origen pendiente';
+
+      contractPreviewOperator.textContent = option.textContent;
+      contractPreviewState.textContent = contractLabel;
+      contractPreviewState.className = 'status-chip ' + (contractIsVigente ? 'status-chip-success' : 'status-chip-warning');
+      contractPreviewCopy.textContent = contractIsVigente
+        ? 'Ya existe un contrato marco activo con este operador. Al enviar, esta solicitud quedara emitida como orden de servicio lista para aceptacion.'
+        : 'Todavia no hay contrato marco vigente con este operador. Al enviar, se crea el retiro pero queda pendiente hasta activar ese marco legal.';
+      contractPreviewUntil.innerHTML = `<i class="fa-solid fa-calendar-check"></i> ${untilLabel}`;
+      contractPreviewBanner.className = 'request-contract-banner ' + (contractIsVigente ? 'is-ready' : 'is-pending');
+      contractPreviewBannerTitle.textContent = contractIsVigente
+        ? 'Ya existe contrato marco vigente con este operador'
+        : 'Contrato marco pendiente de activacion';
+      contractPreviewBannerCopy.textContent = contractIsVigente
+        ? 'No tienes que preocuparte por este paso: el vinculo legal ya existe y el retiro puede seguir su curso normal.'
+        : 'Despues de enviar la solicitud, el retiro quedara a la espera de dejar vigente el contrato marco entre tu empresa y este transportista.';
+      orderPreviewTitle.textContent = contractState === 'vigente'
+        ? 'Se emitira la orden de servicio de este retiro'
+        : 'Se emitira la orden y quedara esperando contrato activo';
+      orderPreviewCopy.textContent = contractState === 'vigente'
+        ? 'La orden quedara vinculada al contrato marco y el operador podra confirmarla desde su panel.'
+        : 'La orden quedara vinculada a este contrato marco y se habilitara apenas las partes completen el respaldo contractual.';
+      orderPreviewResidue.innerHTML = `<i class="fa-solid fa-recycle"></i> ${residueLabel}`;
+      orderPreviewOrigin.innerHTML = `<i class="fa-solid fa-location-dot"></i> ${originLabel}`;
+
+      const previewUrl = new URL(contractPreviewBaseUrl.replace('999999', option.dataset.id || '0'), window.location.origin);
+      if (tipoSelect?.value) previewUrl.searchParams.set('tipo', tipoSelect.value);
+      if (direccionInput?.value) previewUrl.searchParams.set('direccion_retiro', direccionInput.value);
+      if (ubicacionInput?.value) previewUrl.searchParams.set('ubicacion', ubicacionInput.value);
+      if (fechaInput?.value) previewUrl.searchParams.set('fecha', fechaInput.value);
+      if (franjaInput?.value) previewUrl.searchParams.set('franja_horaria', franjaInput.value);
+      if (pesoInput?.value) previewUrl.searchParams.set('peso_estimado', pesoInput.value);
+      if (volumenInput?.value) previewUrl.searchParams.set('volumen_estimado_m3', volumenInput.value);
+      if (distanciaInput?.value) previewUrl.searchParams.set('distancia_km', distanciaInput.value);
+      contractPreviewLink.href = previewUrl.toString();
+      contractPreview.hidden = false;
+    }
+
+    function updatePreview() {
+      const residue = selectedResidue();
+      const operator = activeOperatorData();
+      const peso = parseFloat(pesoInput?.value || '0');
+      const volumen = parseFloat(volumenInput?.value || '0');
+      const distancia = parseFloat(distanciaInput?.value || '0');
+      const option = selectedOption();
+
+      if (!option || !option.value) {
+        detail.hidden = true;
+        preview.hidden = true;
+        contractPreview.hidden = true;
+        gestorId.value = '';
+        return;
+      }
+
+      gestorId.value = option.dataset.id || '';
+      detailName.textContent = option.textContent;
+      detailZone.textContent = `Zona: ${option.dataset.zona}`;
+      detailCoverage.textContent = `${option.dataset.zonasCobertura || option.dataset.zona || 'Sin detalle'}${Number(option.dataset.radioCobertura || '0') > 0 ? ` · Radio ${Number(option.dataset.radioCobertura || '0').toFixed(0)} km` : ''}`;
+      detailCoverageRow.hidden = false;
+      detailRate.textContent = money(option.dataset.baseRetiro || 0);
+      detailLicense.textContent = option.dataset.habilitacion || 'No informada';
+      detailCategory.textContent = option.dataset.categorias || '';
+      detailCategoryRow.hidden = !option.dataset.categorias;
+      detailMode.textContent = option.dataset.modalidad || '';
+      detailModeRow.hidden = !option.dataset.modalidad;
+      detail.hidden = false;
+      updateContractPreview(option, residue);
+
+      if (!residue || !residue.value || !operator || !peso || peso <= 0) {
+        preview.hidden = true;
+        return;
+      }
+
+      const baseRetiro = parseFloat(operator.baseRetiro || '0');
+      const tarifaKm = parseFloat(operator.tarifaKm || '0');
+      const tarifaM3 = parseFloat(operator.tarifaM3 || '0');
+      const tarifaPeso = parseFloat(operator.tarifa || '0');
+      const tarifaTratamiento = parseFloat(operator.tarifaTratamiento || '0');
+      const certificadoCosto = residue.dataset.certificate === '1' ? parseFloat(operator.certificado || '0') : 0;
+
+      const transporteKm = distancia > 0 ? distancia * tarifaKm : 0;
+      const transporteCarga = volumen > 0 ? volumen * tarifaM3 : peso * (tarifaPeso > 0 ? tarifaPeso : 6);
+      const gestion = peso * tarifaTratamiento;
+      const plataforma = (baseRetiro + transporteKm + transporteCarga + gestion + certificadoCosto) * PLATFORM_RATE;
+      const subtotal = baseRetiro + transporteKm + transporteCarga + gestion + certificadoCosto + plataforma;
+      const iva = subtotal * IVA_RATE;
+      const total = subtotal + iva;
+
+      previewNodes.transportBase.textContent = money(baseRetiro);
+      previewNodes.transportKm.textContent = money(transporteKm);
+      previewNodes.transportLoad.textContent = money(transporteCarga);
+      previewNodes.management.textContent = money(gestion);
+      previewNodes.certificate.textContent = money(certificadoCosto);
+      previewNodes.platform.textContent = money(plataforma);
+      previewNodes.subtotal.textContent = money(subtotal);
+      previewNodes.iva.textContent = money(iva);
+      previewNodes.total.textContent = money(total);
+      previewNodes.cfe.textContent = 'eFactura';
+      preview.hidden = false;
+    }
+
+    function nextStep() {
+      if (!validateStep(currentStep)) return;
+      showStep(Math.min(currentStep + 1, steps.length));
+    }
+
+    function prevStep() {
+      showStep(Math.max(currentStep - 1, 1));
+    }
+
+    reopenModal.addEventListener('click', openModal);
+    closeModal.addEventListener('click', closeWizard);
+    modalOverlay.addEventListener('click', (event) => {
+      if (event.target === modalOverlay) closeWizard();
+    });
+    nextButton.addEventListener('click', nextStep);
+    prevButton.addEventListener('click', prevStep);
+
+    gestorSelect.addEventListener('change', updatePreview);
+    tipoSelect.addEventListener('change', updateRiskBox);
+    tipoSelect.addEventListener('change', updateAssignmentUI);
+    pesoInput.addEventListener('input', updatePreview);
+    volumenInput.addEventListener('input', updatePreview);
+    distanciaInput.addEventListener('input', updatePreview);
+    franjaInput.addEventListener('change', updatePreview);
+    ubicacionInput.addEventListener('input', updateAssignmentUI);
+    direccionInput.addEventListener('input', updateAssignmentUI);
+
+    updateRiskBox();
+    updateAssignmentUI();
+    showStep(1);
+    openModal();
+  })();
+</script>
+{% endblock %}

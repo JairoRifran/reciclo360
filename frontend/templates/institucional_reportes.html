@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Reportes | Panel Institucional IMM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Reportes institucionales</h1>
+          </div>
+
+          <div class="dashboard-actions">
+            <a href="{{ url_for('institucional_reportes_exportar', **filters) }}" class="btn">Exportar CSV</a>
+          </div>
+
+          <div class="metrics institutional-metrics-wide">
+            <div class="metric-card institutional-metric-card metric-operations"><div><div class="value">{{ report_rows|length }}</div><div class="label">Retiros reportados</div><div class="metric-note">Base visible en el reporte actual</div></div></div>
+            <div class="metric-card institutional-metric-card metric-contracts"><div><div class="value">{{ kpis.pct_contrato_vigente }}%</div><div class="label">Con contrato vigente</div><div class="metric-note">Cobertura contractual del corte</div></div></div>
+            <div class="metric-card institutional-metric-card metric-docs"><div><div class="value">{{ kpis.pct_documentacion_completa }}%</div><div class="label">Legajo completo</div><div class="metric-note">Calidad documental del periodo</div></div></div>
+            <div class="metric-card institutional-metric-card metric-alert"><div><div class="value">{{ kpis.alertas }}</div><div class="label">Alertas</div><div class="metric-note">Casos con foco de seguimiento</div></div></div>
+          </div>
+
+          <div class="grid-3 institutional-kicker-grid">
+            <article class="info-box institutional-mini-panel mini-panel-operations">
+              <strong>Top zonas</strong>
+              <p>{% if top_zonas %}{{ top_zonas[0][0] }} lidera con {{ top_zonas[0][1] }} retiro(s).{% else %}Sin datos de zonas.{% endif %}</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-docs">
+              <strong>Residuo mas frecuente</strong>
+              <p>{% if top_residuos %}{{ top_residuos[0][0] }} aparece {{ top_residuos[0][1] }} vez/veces en el corte actual.{% else %}Sin datos de residuos.{% endif %}</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-contracts">
+              <strong>Destino mas informado</strong>
+              <p>{% if top_destinos %}{{ top_destinos[0][0] }} concentra {{ top_destinos[0][1] }} registro(s).{% else %}Sin destinos cargados.{% endif %}</p>
+            </article>
+          </div>
+
+          <div class="table-container institutional-table-shell">
+            <table class="institutional-table institutional-wide-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Fecha</th>
+                  <th>Empresa</th>
+                  <th>Transportista</th>
+                  <th>Residuo</th>
+                  <th>Peso real</th>
+                  <th>Estado</th>
+                  <th>Documental</th>
+                  <th>Destino</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in report_rows %}
+                <tr>
+                  <td><a href="{{ url_for('institucional_retiro_detalle', sid=row.id) }}">#{{ row.id }}</a></td>
+                  <td>{{ row.fecha }}</td>
+                  <td>
+                    <strong>{{ row.empresa }}</strong>
+                    <small>{{ row.rut or 'RUT no cargado' }}</small>
+                  </td>
+                  <td>{{ row.transportista }}</td>
+                  <td>
+                    <strong>{{ row.residuo }}</strong>
+                    <small>{{ row.categoria or 'Categoria general' }}</small>
+                  </td>
+                  <td>{{ row.peso_real or row.peso_estimado }}</td>
+                  <td><span class="status-chip status-chip-neutral">{{ row.estado|capitalize }}</span></td>
+                  <td><span class="status-chip status-chip-neutral">{{ row.estado_documental }}</span></td>
+                  <td>{{ row.destino_real or row.destino_previsto or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center">No hay datos para el reporte.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

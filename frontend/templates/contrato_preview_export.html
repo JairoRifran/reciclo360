@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contrato Marco | Residuos 360</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      color: #163228;
+      line-height: 1.5;
+    }
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 28px 48px;
+    }
+    .kicker {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #56856d;
+      margin-bottom: 10px;
+    }
+    h1, h2, h3 {
+      margin: 0 0 10px;
+      color: #0f2b20;
+    }
+    p {
+      margin: 0 0 10px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .meta-card, .section-box {
+      border: 1px solid #d8e6dc;
+      border-radius: 16px;
+      padding: 16px;
+      background: #fafdfa;
+    }
+    .meta-card span {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #56856d;
+      margin-bottom: 8px;
+    }
+    .section-stack {
+      display: grid;
+      gap: 14px;
+    }
+    .annex-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+    .breakdown p {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid #edf4ef;
+      padding: 8px 0;
+    }
+    .signature-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 34px;
+    }
+    .signature-box {
+      padding-top: 36px;
+      border-top: 1px solid #b7cfc0;
+    }
+    @media print {
+      .page {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="kicker">Documento exportado desde Residuos 360</div>
+    <h1>Contrato Marco de Recoleccion y Transporte de Residuos No Domiciliarios</h1>
+    <p>Estado actual del marco: {{ contract_state_label(contract.estado) }}</p>
+
+    <div class="meta-grid">
+      <div class="meta-card">
+        <span>Empresa generadora</span>
+        <strong>{{ empresa.razon_social or empresa.nombre_visible }}</strong>
+        <p>RUT: {{ empresa.rut or 'No informado' }}</p>
+        <p>Domicilio: {{ empresa.domicilio_fiscal or empresa.direccion_base or empresa.ubicacion or 'No informado' }}</p>
+      </div>
+      <div class="meta-card">
+        <span>Transportista habilitado</span>
+        <strong>{{ gestor.razon_social or gestor.nombre_visible }}</strong>
+        <p>RUT: {{ gestor.rut or gestor.ministerio_rut or 'No informado' }}</p>
+        <p>Habilitacion: {{ gestor.numero_habilitacion or gestor.ministerio_estado or 'No informada' }}</p>
+      </div>
+      <div class="meta-card">
+        <span>Vigencia prevista</span>
+        <strong>{{ contract.vigencia_desde.strftime('%d/%m/%Y') if contract.vigencia_desde else 'A definir' }} al {{ contract.vigencia_hasta.strftime('%d/%m/%Y') if contract.vigencia_hasta else 'A definir' }}</strong>
+        <p>Proveedor de firma: {{ contract.proveedor_firma or 'firma_avanzada_externa' }}</p>
+        <p>Hash de referencia: {{ contract.contrato_hash or 'Pendiente' }}</p>
+      </div>
+    </div>
+
+    <div class="section-stack">
+      <div class="section-box">
+        <h3>1. Objeto</h3>
+        <p>El presente contrato marco regula la relacion entre la empresa generadora y el transportista habilitado para coordinar retiros de residuos no domiciliarios mediante la plataforma Residuos 360.</p>
+      </div>
+      <div class="section-box">
+        <h3>2. Alcance y partes</h3>
+        <p>La empresa generadora declara ser responsable de los residuos que entrega, y el transportista declara encontrarse habilitado para realizar las tareas de retiro y traslado conforme a la normativa aplicable.</p>
+        <p>Residuos 360 actua exclusivamente como plataforma de gestion documental, trazabilidad, coordinacion operativa y soporte contractual, sin asumir el rol de transportista ni de gestor de residuos.</p>
+      </div>
+      <div class="section-box">
+        <h3>3. Tipos de residuos cubiertos</h3>
+        <p>{{ contract.tipos_residuo or (residue.label if residue else 'Se definiran segun cada orden de servicio emitida en la plataforma.') }}</p>
+      </div>
+      <div class="section-box">
+        <h3>4. Direcciones y cobertura</h3>
+        <p>Direcciones cubiertas por este marco: {{ contract.direcciones_cubiertas or empresa.direccion_base or direccion or 'A definir' }}.</p>
+        <p>Zona de referencia del transportista: {{ gestor.ubicacion or 'No informada' }}{% if gestor.zonas_cobertura %}. Cobertura declarada: {{ gestor.zonas_cobertura }}{% endif %}.</p>
+      </div>
+      <div class="section-box">
+        <h3>5. Obligaciones documentales</h3>
+        <p>Cada retiro quedara respaldado por una orden de servicio, constancia de retiro y cierre documental con trazabilidad, incluyendo evidencia, peso y destino final cuando corresponda.</p>
+      </div>
+      <div class="section-box">
+        <h3>6. Uso de Residuos 360</h3>
+        <p>Las partes aceptan utilizar Residuos 360 para generar, almacenar y consultar documentos, evidencia, eventos operativos y constancias asociadas a cada retiro.</p>
+      </div>
+      <div class="section-box">
+        <h3>7. Firma electronica avanzada</h3>
+        <p>El contrato marco y las ordenes de servicio podran ser firmadas electronicamente por representantes autorizados, conservando trazabilidad de version, firmantes, fecha y soporte documental.</p>
+      </div>
+    </div>
+
+    <div class="section-box" style="margin-top: 24px;">
+      <div class="kicker">Anexo preliminar del retiro</div>
+      <h2>Orden de Servicio asociada a esta solicitud</h2>
+      <div class="annex-grid">
+        <div class="meta-card">
+          <span>Residuo</span>
+          <strong>{{ residue.label if residue else 'No definido aun' }}</strong>
+          <p>Riesgo: {{ residue.risk if residue else 'Pendiente' }}</p>
+        </div>
+        <div class="meta-card">
+          <span>Origen del retiro</span>
+          <strong>{{ direccion or 'Pendiente' }}</strong>
+          <p>Zona: {{ ubicacion or 'Pendiente' }}</p>
+        </div>
+        <div class="meta-card">
+          <span>Programacion</span>
+          <strong>{{ fecha_retiro.strftime('%d/%m/%Y') if fecha_retiro else 'Pendiente' }}</strong>
+          <p>Franja horaria: {{ franja_horaria or 'Pendiente' }}</p>
+          <p>Peso estimado: {{ '%.2f'|format(peso_estimado or 0) }} kg{% if volumen_estimado_m3 %} · Volumen: {{ '%.2f'|format(volumen_estimado_m3) }} m3{% endif %}</p>
+        </div>
+      </div>
+
+      {% if quote_preview %}
+      <div class="breakdown">
+        <p><span>Transporte</span><strong>UYU {{ '%.2f'|format(quote_preview.transport_total or 0) }}</strong></p>
+        <p><span>Gestion / tratamiento</span><strong>UYU {{ '%.2f'|format(quote_preview.management_total or 0) }}</strong></p>
+        <p><span>Certificado</span><strong>UYU {{ '%.2f'|format(quote_preview.certificate_total or 0) }}</strong></p>
+        <p><span>Fee plataforma</span><strong>UYU {{ '%.2f'|format(quote_preview.platform_fee or 0) }}</strong></p>
+        <p><span>Total estimado</span><strong>UYU {{ '%.2f'|format(quote_preview.total or 0) }}</strong></p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="signature-row">
+      <div class="signature-box">
+        <strong>Firma empresa generadora</strong>
+      </div>
+      <div class="signature-box">
+        <strong>Firma transportista habilitado</strong>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

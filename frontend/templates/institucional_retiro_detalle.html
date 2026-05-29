@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+{% block title %}Retiro #{{ solicitud.id }} | Panel Institucional IMM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Ficha de trazabilidad &middot; Retiro #{{ solicitud.id }}</h1>
+          </div>
+
+          <section class="trace-header-card surface-card">
+            <div class="trace-header-top">
+              <div class="trace-header-copy">
+                <a href="{{ url_for('institucional_retiros') }}" class="trace-back-link">
+                  <i class="fa-solid fa-arrow-left"></i>
+                  <span>Volver al listado de retiros</span>
+                </a>
+                <span class="dashboard-kicker"><i class="fa-solid fa-route"></i> Trazabilidad institucional</span>
+                <h2>{{ solicitud.empresa }} / {{ solicitud.tipo }}</h2>
+                <p>Vista consolidada del retiro, sus actores intervinientes, respaldo documental y secuencia de eventos.</p>
+              </div>
+              <div class="trace-header-badges">
+                <span class="status-chip status-{{ solicitud.estado }}">{{ solicitud.estado|capitalize }}</span>
+                <span class="status-chip status-chip-neutral">{{ estado_documental_label }}</span>
+                <span class="status-chip {% if solicitud.contrato_vigente %}status-chip-success{% else %}status-chip-warning{% endif %}">
+                  {{ 'Contrato vigente' if solicitud.contrato_vigente else 'Contrato no vigente' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="trace-kpi-grid">
+              <article class="trace-kpi-card trace-kpi-primary">
+                <span>Estado actual</span>
+                <strong>{{ solicitud.estado|capitalize }}</strong>
+                <small>Situacion operativa del retiro dentro del flujo.</small>
+              </article>
+              <article class="trace-kpi-card trace-kpi-docs">
+                <span>Estado documental</span>
+                <strong>{{ estado_documental_label }}</strong>
+                <small>Condicion del legajo segun lo cargado en la plataforma.</small>
+              </article>
+              <article class="trace-kpi-card trace-kpi-route">
+                <span>Destino informado</span>
+                <strong>{{ solicitud.destino_final or solicitud.destino_previsto or 'Pendiente' }}</strong>
+                <small>{{ 'Destino final confirmado' if solicitud.destino_final else 'Sin cierre final documentado' }}</small>
+              </article>
+              <article class="trace-kpi-card trace-kpi-vehicle">
+                <span>Vehiculo / matricula</span>
+                <strong>{{ solicitud.vehiculo_matricula or 'Sin matricula' }}</strong>
+                <small>{{ solicitud.vehiculo_descripcion or 'Vehiculo no detallado' }}</small>
+              </article>
+            </div>
+          </section>
+
+          <div class="trace-party-grid">
+            <article class="trace-party-card surface-card">
+              <div class="trace-party-icon"><i class="fa-solid fa-building"></i></div>
+              <div>
+                <span>Empresa generadora</span>
+                <strong>{{ solicitud.empresa }}</strong>
+                <small>{{ solicitud.owner.rut if solicitud.owner and solicitud.owner.rut else 'RUT no cargado' }}</small>
+              </div>
+            </article>
+            <article class="trace-party-card surface-card">
+              <div class="trace-party-icon"><i class="fa-solid fa-truck"></i></div>
+              <div>
+                <span>Transportista interviniente</span>
+                <strong>{{ solicitud.gestor_nombre }}</strong>
+                <small>{{ solicitud.gestor_user.numero_habilitacion if solicitud.gestor_user and solicitud.gestor_user.numero_habilitacion else 'Habilitacion no informada' }}</small>
+              </div>
+            </article>
+            <article class="trace-party-card surface-card">
+              <div class="trace-party-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+              <div>
+                <span>Origen / zona</span>
+                <strong>{{ solicitud.ubicacion }}</strong>
+                <small>{{ solicitud.direccion_retiro or 'Direccion no detallada' }}</small>
+              </div>
+            </article>
+          </div>
+
+          <div class="trace-layout-grid">
+            <div class="trace-main-column">
+              <section class="surface-card trace-detail-section">
+                <div class="panel-head">
+                  <div>
+                    <h2>Resumen del retiro</h2>
+                    <p>Datos clave para identificar la operacion y su contexto contractual.</p>
+                  </div>
+                </div>
+                <div class="trace-detail-grid trace-detail-grid-3">
+                  <div class="trace-detail-card">
+                    <span>Empresa</span>
+                    <strong>{{ solicitud.empresa }}</strong>
+                    <small>Generador declarado</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>RUT</span>
+                    <strong>{{ solicitud.owner.rut if solicitud.owner and solicitud.owner.rut else 'No cargado' }}</strong>
+                    <small>Identificacion fiscal visible</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Contrato marco</span>
+                    <strong>{{ 'Vigente' if solicitud.contrato_vigente else 'No vigente' }}</strong>
+                    <small>{{ 'Base contractual activa' if solicitud.contrato_vigente else 'Requiere regularizacion' }}</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Transportista</span>
+                    <strong>{{ solicitud.gestor_nombre }}</strong>
+                    <small>Operador asignado</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Habilitacion</span>
+                    <strong>{{ solicitud.gestor_user.numero_habilitacion if solicitud.gestor_user and solicitud.gestor_user.numero_habilitacion else 'No informada' }}</strong>
+                    <small>Dato declarado por el transportista</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Verificacion</span>
+                    <strong>{{ 'Verificado' if solicitud.gestor_user and (solicitud.gestor_user.verificado_ministerio or solicitud.gestor_user.operador_habilitado) else 'Pendiente' }}</strong>
+                    <small>Estado de control del operador</small>
+                  </div>
+                </div>
+              </section>
+
+              <section class="surface-card trace-detail-section">
+                <div class="panel-head">
+                  <div>
+                    <h2>Operacion y movimiento</h2>
+                    <p>Fechas, cantidades y ubicaciones reportadas para el retiro.</p>
+                  </div>
+                </div>
+                <div class="trace-detail-grid trace-detail-grid-3">
+                  <div class="trace-detail-card">
+                    <span>Residuo</span>
+                    <strong>{{ solicitud.tipo }}</strong>
+                    <small>{{ solicitud.categoria_residuo or 'Categoria general' }}</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Peso estimado</span>
+                    <strong>{{ '%.2f'|format(solicitud.peso_estimado) }} {{ solicitud.unidad_peso }}</strong>
+                    <small>Declarado al solicitar el retiro</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Peso real</span>
+                    <strong>{% if solicitud.peso_real %}{{ '%.2f'|format(solicitud.peso_real) }} {{ solicitud.unidad_peso }}{% else %}Pendiente{% endif %}</strong>
+                    <small>Valor de cierre operativo</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Fecha solicitada</span>
+                    <strong>{{ solicitud.creado.strftime('%d/%m/%Y %H:%M') }}</strong>
+                    <small>Alta inicial del servicio</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Fecha programada</span>
+                    <strong>{{ solicitud.programado_en.strftime('%d/%m/%Y %H:%M') if solicitud.programado_en else solicitud.programacion_label }}</strong>
+                    <small>Planificacion operativa</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Retiro real</span>
+                    <strong>{{ solicitud.retirada_en.strftime('%d/%m/%Y %H:%M') if solicitud.retirada_en else 'Pendiente' }}</strong>
+                    <small>Ejecucion registrada</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Direccion</span>
+                    <strong>{{ solicitud.direccion_retiro or solicitud.ubicacion }}</strong>
+                    <small>Punto de retiro declarado</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Zona</span>
+                    <strong>{{ solicitud.ubicacion }}</strong>
+                    <small>Referencia territorial</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Observaciones del retiro</span>
+                    <strong>{{ solicitud.retiro_observaciones or solicitud.observaciones or 'Sin observaciones operativas' }}</strong>
+                    <small>Ultimo comentario cargado</small>
+                  </div>
+                </div>
+              </section>
+
+              <section class="surface-card trace-detail-section">
+                <div class="panel-head">
+                  <div>
+                    <h2>Destino y vehiculo</h2>
+                    <p>Informacion declarada para traslado y disposicion final.</p>
+                  </div>
+                </div>
+                <div class="trace-detail-grid">
+                  <div class="trace-detail-card">
+                    <span>Destino previsto</span>
+                    <strong>{{ solicitud.destino_previsto or 'No informado' }}</strong>
+                    <small>Destino cargado antes del cierre</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Destino real</span>
+                    <strong>{{ solicitud.destino_final or 'Pendiente de confirmacion' }}</strong>
+                    <small>Destino informado al finalizar</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Vehiculo</span>
+                    <strong>{{ solicitud.vehiculo_descripcion or 'No detallado' }}</strong>
+                    <small>Unidad declarada</small>
+                  </div>
+                  <div class="trace-detail-card">
+                    <span>Matricula</span>
+                    <strong>{{ solicitud.vehiculo_matricula or 'No informada' }}</strong>
+                    <small>Identificacion visible del vehiculo</small>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="trace-side-column">
+              <section class="surface-card trace-doc-section">
+                <div class="panel-head">
+                  <div>
+                    <h2>Documentacion asociada</h2>
+                    <p>Estado del legajo y acceso rapido a evidencias.</p>
+                  </div>
+                </div>
+                <div class="trace-doc-grid">
+                  <a href="{{ solicitud.contrato_marco.contrato_firmado if solicitud.contrato_marco and solicitud.contrato_marco.contrato_firmado else '#' }}" class="trace-doc-card {% if not (solicitud.contrato_marco and solicitud.contrato_marco.contrato_firmado) %}is-empty{% endif %}" {% if solicitud.contrato_marco and solicitud.contrato_marco.contrato_firmado %}target="_blank"{% endif %}>
+                    <div class="trace-doc-icon"><i class="fa-solid fa-file-signature"></i></div>
+                    <div>
+                      <strong>Contrato marco</strong>
+                      <span>{% if solicitud.contrato_marco and solicitud.contrato_marco.contrato_firmado %}Disponible para consulta{% else %}No cargado{% endif %}</span>
+                    </div>
+                  </a>
+                  <a href="{{ solicitud.comprobante_peso if solicitud.comprobante_peso else '#' }}" class="trace-doc-card {% if not solicitud.comprobante_peso %}is-empty{% endif %}" {% if solicitud.comprobante_peso %}target="_blank"{% endif %}>
+                    <div class="trace-doc-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div>
+                      <strong>Comprobante de peso</strong>
+                      <span>{% if solicitud.comprobante_peso %}Archivo cargado{% else %}No adjunto{% endif %}</span>
+                    </div>
+                  </a>
+                  <a href="{{ solicitud.evidencia_retiro if solicitud.evidencia_retiro else '#' }}" class="trace-doc-card {% if not solicitud.evidencia_retiro %}is-empty{% endif %}" {% if solicitud.evidencia_retiro %}target="_blank"{% endif %}>
+                    <div class="trace-doc-icon"><i class="fa-solid fa-camera"></i></div>
+                    <div>
+                      <strong>Constancia / evidencia</strong>
+                      <span>{% if solicitud.evidencia_retiro %}Archivo cargado{% else %}No adjunto{% endif %}</span>
+                    </div>
+                  </a>
+                  <a href="{{ solicitud.certificado_destino if solicitud.certificado_destino else '#' }}" class="trace-doc-card {% if not solicitud.certificado_destino %}is-empty{% endif %}" {% if solicitud.certificado_destino %}target="_blank"{% endif %}>
+                    <div class="trace-doc-icon"><i class="fa-solid fa-file-shield"></i></div>
+                    <div>
+                      <strong>Certificado final</strong>
+                      <span>{% if solicitud.certificado_destino %}Archivo cargado{% else %}No adjunto{% endif %}</span>
+                    </div>
+                  </a>
+                </div>
+                <div class="trace-doc-summary {% if solicitud.documentacion_faltante %}has-missing{% else %}is-complete{% endif %}">
+                  {% if solicitud.documentacion_faltante %}
+                  <strong><i class="fa-solid fa-triangle-exclamation"></i> Faltantes detectados</strong>
+                  <p>{{ solicitud.documentacion_faltante|join(', ') }}</p>
+                  {% else %}
+                  <strong><i class="fa-solid fa-circle-check"></i> Legajo documental completo</strong>
+                  <p>La documentacion principal del retiro se encuentra respaldada en la plataforma.</p>
+                  {% endif %}
+                </div>
+              </section>
+
+              <section class="surface-card trace-timeline-section">
+                <div class="panel-head">
+                  <div>
+                    <h2>Linea de tiempo</h2>
+                    <p>Secuencia de eventos del retiro.</p>
+                  </div>
+                </div>
+                <div class="trace-timeline-list">
+                  {% for item in timeline %}
+                  <div class="trace-timeline-item">
+                    <div class="trace-timeline-dot"></div>
+                    <div class="trace-timeline-content">
+                      <strong>{{ item.label }}</strong>
+                      <span>{{ item.detail }}</span>
+                    </div>
+                    <time>{{ item.created_at }}</time>
+                  </div>
+                  {% else %}
+                  <div class="trace-timeline-empty">Sin eventos registrados.</div>
+                  {% endfor %}
+                </div>
+              </section>
+
+              <section class="surface-card trace-observation-section">
+                <div class="panel-head">
+                  <div>
+                    <h2>Observaciones institucionales</h2>
+                    <p>Notas internas del seguimiento IMM.</p>
+                  </div>
+                </div>
+                <div class="trace-observation-list">
+                  {% for item in observaciones %}
+                  <div class="trace-observation-card">
+                    <div class="trace-observation-top">
+                      <strong>{{ item.tipo.replace('_', ' ')|capitalize }}</strong>
+                      <span class="status-chip status-chip-neutral">{{ item.estado|capitalize }}</span>
+                    </div>
+                    <p>{{ item.detalle }}</p>
+                  </div>
+                  {% else %}
+                  <div class="trace-observation-card is-empty">
+                    <div class="trace-observation-top">
+                      <strong>Sin observaciones</strong>
+                    </div>
+                    <p>Este retiro no tiene comentarios institucionales cargados.</p>
+                  </div>
+                  {% endfor %}
+                </div>
+
+                {% if can_view_sensitive %}
+                <form action="{{ url_for('institucional_observar_retiro', sid=solicitud.id) }}" method="post" class="stack-form accordion-form trace-observation-form">
+                  <div class="grid-2">
+                    <label>
+                      Tipo
+                      <select name="tipo">
+                        <option value="observacion_documental">Observacion documental</option>
+                        <option value="requiere_revision">Requiere revision</option>
+                        <option value="informacion_incompleta">Informacion incompleta</option>
+                      </select>
+                    </label>
+                    <label>
+                      Estado
+                      <select name="estado">
+                        <option value="abierta">Abierta</option>
+                        <option value="en_revision">En revision</option>
+                        <option value="cerrada">Cerrada</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    Detalle
+                    <input type="text" name="detalle" placeholder="Describe la observacion institucional" required>
+                  </label>
+                  <button type="submit" class="btn secondary-btn">Guardar observacion</button>
+                </form>
+                {% endif %}
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

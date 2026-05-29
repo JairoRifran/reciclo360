@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% block title %}Registro | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container auth-shell auth-shell-wide">
+    <div class="auth-flow-card">
+      <div class="auth-choice-stage" id="auth-choice-stage">
+        <div class="auth-stage-head">
+          <span class="eyebrow"><i class="fa-solid fa-user-plus"></i> Crear cuenta</span>
+          <h1>Elige que tipo de cuenta quieres crear</h1>
+          <p>Primero selecciona si vas a entrar como empresa o como transportista. Despues te mostramos los beneficios y el formulario correspondiente.</p>
+        </div>
+
+        <div class="auth-role-grid">
+          <button type="button" class="auth-role-card" data-open-role="empresa">
+            <div class="auth-role-card-icon"><i class="fa-solid fa-building"></i></div>
+            <strong>Cuenta de empresa</strong>
+            <span>Pedir retiros, ordenar contratos, seguir estados y dejar respaldo documental.</span>
+          </button>
+
+          <button type="button" class="auth-role-card" data-open-role="gestor">
+            <div class="auth-role-card-icon"><i class="fa-solid fa-truck-fast"></i></div>
+            <strong>Cuenta de transportista</strong>
+            <span>Recibir solicitudes, mostrar cobertura, cargar evidencia y operar con mejor presentacion.</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-detail-stage" id="auth-detail-stage" hidden>
+        <div class="auth-stage-toolbar">
+          <button type="button" class="btn secondary-btn" id="auth-back-button">
+            <i class="fa-solid fa-arrow-left"></i>
+            Volver
+          </button>
+          <span class="auth-stage-tag" id="auth-stage-tag">Cuenta seleccionada</span>
+        </div>
+
+        <div class="auth-split-card">
+          <aside class="auth-side-panel">
+            <div class="auth-side-copy" data-copy-role="empresa">
+              <span class="eyebrow"><i class="fa-solid fa-building"></i> Alta para empresas</span>
+              <h2>Ordena tus retiros y deja respaldo listo para operar con mas control.</h2>
+              <p>Residuos 360 te ayuda a coordinar retiros, elegir operadores compatibles, seguir el estado de cada servicio y dejar la documentacion preparada para cumplimiento y auditoria.</p>
+
+              <div class="auth-benefit-list">
+                <article class="auth-benefit-item">
+                  <i class="fa-solid fa-route"></i>
+                  <div>
+                    <strong>Menos coordinacion informal</strong>
+                    <span>Centraliza solicitudes, seguimiento y cierre sin depender de WhatsApp o planillas sueltas.</span>
+                  </div>
+                </article>
+                <article class="auth-benefit-item">
+                  <i class="fa-solid fa-shield-check"></i>
+                  <div>
+                    <strong>Mas cumplimiento y trazabilidad</strong>
+                    <span>Controla contratos, actas, certificados, peso real y estado documental de cada retiro.</span>
+                  </div>
+                </article>
+                <article class="auth-benefit-item">
+                  <i class="fa-solid fa-chart-line"></i>
+                  <div>
+                    <strong>Mejor visibilidad operativa</strong>
+                    <span>Ve costos estimados, estado economico, reportes y declaraciones desde un solo lugar.</span>
+                  </div>
+                </article>
+              </div>
+
+              <div class="auth-side-note">
+                <strong>Que puedes hacer apenas te registras</strong>
+                <span>Crear tu primera solicitud, revisar operadores por zona y dejar listo el marco legal para futuros retiros.</span>
+              </div>
+            </div>
+
+            <div class="auth-side-copy" data-copy-role="gestor">
+              <span class="eyebrow"><i class="fa-solid fa-truck-fast"></i> Alta para transportistas</span>
+              <h2>Ahora puedes recibir mas traslados con Residuos 360.</h2>
+              <p>Con Residuos 360 puedes aparecer frente a empresas que necesitan retiros, ordenar tus servicios, dejar evidencia documental y trabajar con una presentacion mucho mas formal.</p>
+
+              <div class="auth-benefit-list">
+                <article class="auth-benefit-item">
+                  <i class="fa-solid fa-inbox"></i>
+                  <div>
+                    <strong>Recibe solicitudes nuevas</strong>
+                    <span>Accede a pedidos compatibles con tu zona y las categorias de residuos que realmente transportas.</span>
+                  </div>
+                </article>
+                <article class="auth-benefit-item">
+                  <i class="fa-solid fa-file-circle-check"></i>
+                  <div>
+                    <strong>Mejor presentacion frente a clientes</strong>
+                    <span>Comparte habilitacion, cobertura, categorias, trazabilidad y respaldo documental desde un mismo panel.</span>
+                  </div>
+                </article>
+                <article class="auth-benefit-item">
+                  <i class="fa-solid fa-money-check-dollar"></i>
+                  <div>
+                    <strong>Alta sin costo</strong>
+                    <span>Puedes crear tu perfil, mostrar tu operativa y empezar a recibir solicitudes sin pagar registro inicial.</span>
+                  </div>
+                </article>
+              </div>
+
+              <div class="auth-side-note">
+                <strong>Que puedes hacer apenas te registras</strong>
+                <span>Completar tu perfil, informar tu cobertura, cargar categorias y empezar a aparecer para nuevas empresas.</span>
+              </div>
+            </div>
+          </aside>
+
+          <div class="auth-card auth-card-wide">
+            <div class="auth-form-head">
+              <h2 id="auth-form-title">Crear cuenta</h2>
+              <p class="auth-copy" id="auth-form-copy">Completa la informacion basica para empezar a usar tu panel.</p>
+            </div>
+
+            <form action="{{ url_for('register') }}" method="post" class="stack-form" id="register-form">
+              <input type="hidden" name="role" id="role" value="{{ 'gestor' if preselected_role == 'gestor' else 'empresa' }}">
+
+              <div class="auth-inline-pill" data-pill-role="empresa">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Tu alta te deja lista para pedir retiros, ver contratos y seguir cada servicio desde el panel.</span>
+              </div>
+              <div class="auth-inline-pill" data-pill-role="gestor">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Tu alta no tiene costo inicial y te permite mostrar cobertura, habilitacion y categorias operativas.</span>
+              </div>
+
+              <div class="grid-2">
+                <label for="email">Correo electronico
+                  <input type="email" id="email" name="email" placeholder="contacto@empresa.uy" required>
+                </label>
+                <label for="telefono">Telefono
+                  <input type="text" id="telefono" name="telefono" placeholder="099 123 456">
+                </label>
+              </div>
+
+              <label for="password">Contrasena
+                <input type="password" id="password" name="password" placeholder="Crea una clave para entrar a tu panel" required>
+              </label>
+
+              <div data-role-block="empresa">
+                <div class="auth-section-label">
+                  <i class="fa-solid fa-building"></i>
+                  <span>Datos basicos de la empresa</span>
+                </div>
+
+                <div class="grid-2">
+                  <label for="empresa">Nombre de la empresa
+                    <input type="text" id="empresa" name="empresa" placeholder="Ej. Industria Rio Sur">
+                  </label>
+                  <label for="ubicacion">Zona principal
+                    <input type="text" id="ubicacion" name="ubicacion" placeholder="Ej. Montevideo, Ciudad Vieja, Zona Oeste">
+                  </label>
+                </div>
+
+                <div class="auth-help-box">
+                  <strong>Para que usamos estos datos</strong>
+                  <span>Nos ayudan a sugerirte operadores compatibles, generar contratos y organizar mejor tus solicitudes futuras.</span>
+                </div>
+              </div>
+
+              <div data-role-block="gestor">
+                <div class="auth-section-label">
+                  <i class="fa-solid fa-truck"></i>
+                  <span>Datos operativos del transportista</span>
+                </div>
+
+                <div class="grid-2">
+                  <label for="empresa_g">Nombre comercial
+                    <input type="text" id="empresa_g" name="empresa_g" placeholder="Ej. Transportes Verde">
+                  </label>
+                  <label for="ubicacion_g">Zona de cobertura
+                    <input type="text" id="ubicacion_g" name="ubicacion_g" placeholder="Ej. Montevideo y area metropolitana">
+                  </label>
+                </div>
+
+                <div class="grid-2">
+                  <label for="numero_habilitacion">Numero de habilitacion
+                    <input type="text" id="numero_habilitacion" name="numero_habilitacion" placeholder="Ej. DINACEA-TR-2026-015">
+                  </label>
+                  <label for="rut">RUT
+                    <input type="text" id="rut" name="rut" placeholder="Ej. 218275890010">
+                  </label>
+                </div>
+
+                <div class="grid-2">
+                  <label for="tarifa_por_kg">Variable por kg (UYU)
+                    <input type="number" step="0.01" min="0" id="tarifa_por_kg" name="tarifa_por_kg" placeholder="Ej. 1.50">
+                  </label>
+                  <label>
+                    <span>Como validamos tu perfil</span>
+                    <input type="text" value="Primero intentamos verificar por RUT y luego por nombre registrado." disabled>
+                  </label>
+                </div>
+
+                <div class="auth-help-box">
+                  <strong>Que veran las empresas</strong>
+                  <span>Tu nombre comercial, cobertura, habilitacion, categorias y una referencia inicial para cotizar retiros.</span>
+                </div>
+
+                <label>Categorias que puedes transportar</label>
+                <div class="category-groups">
+                  {% for group in residue_groups %}
+                  <div class="category-family">
+                    <strong>{{ group.label }}</strong>
+                    <div class="category-checklist">
+                      {% for item in group["items"] %}
+                      <label class="category-item">
+                        <input type="checkbox" name="categorias_residuo" value="{{ item.key }}">
+                        <span>
+                          <b>{{ item.label }}</b>
+                          <small>{{ item.description }}</small>
+                        </span>
+                      </label>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <button type="submit" class="btn">
+                <i class="fa-solid fa-user-plus"></i>
+                Crear cuenta
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const choiceStage = document.getElementById('auth-choice-stage');
+    const detailStage = document.getElementById('auth-detail-stage');
+    const backButton = document.getElementById('auth-back-button');
+    const roleField = document.getElementById('role');
+    const openButtons = Array.from(document.querySelectorAll('[data-open-role]'));
+    const empresaBlock = document.querySelector('[data-role-block="empresa"]');
+    const gestorBlock = document.querySelector('[data-role-block="gestor"]');
+    const copyBlocks = Array.from(document.querySelectorAll('[data-copy-role]'));
+    const pills = Array.from(document.querySelectorAll('[data-pill-role]'));
+    const stageTag = document.getElementById('auth-stage-tag');
+    const formTitle = document.getElementById('auth-form-title');
+    const formCopy = document.getElementById('auth-form-copy');
+    const initialRole = '{{ "gestor" if preselected_role == "gestor" else "empresa" }}';
+
+    const copyMap = {
+      empresa: {
+        tag: 'Cuenta de empresa',
+        title: 'Crear cuenta de empresa',
+        copy: 'Completa la informacion basica para empezar a pedir retiros y seguir cada servicio desde tu panel.'
+      },
+      gestor: {
+        tag: 'Cuenta de transportista',
+        title: 'Crear cuenta de transportista',
+        copy: 'Completa tu perfil operativo para empezar a aparecer frente a empresas y recibir solicitudes.'
+      }
+    };
+
+    function applyRole(role) {
+      const isGestor = role === 'gestor';
+      roleField.value = role;
+      empresaBlock.style.display = isGestor ? 'none' : 'block';
+      gestorBlock.style.display = isGestor ? 'block' : 'none';
+      gestorBlock.hidden = !isGestor;
+      empresaBlock.hidden = isGestor;
+
+      copyBlocks.forEach((block) => {
+        block.style.display = block.dataset.copyRole === role ? 'block' : 'none';
+      });
+
+      pills.forEach((pill) => {
+        pill.style.display = pill.dataset.pillRole === role ? 'flex' : 'none';
+      });
+
+      stageTag.textContent = copyMap[role].tag;
+      formTitle.textContent = copyMap[role].title;
+      formCopy.textContent = copyMap[role].copy;
+    }
+
+    function openDetail(role) {
+      applyRole(role);
+      choiceStage.hidden = true;
+      detailStage.hidden = false;
+    }
+
+    openButtons.forEach((button) => {
+      button.addEventListener('click', () => openDetail(button.dataset.openRole));
+    });
+
+    backButton.addEventListener('click', () => {
+      detailStage.hidden = true;
+      choiceStage.hidden = false;
+    });
+
+    if (window.location.search.includes('role=')) {
+      openDetail(initialRole);
+    } else {
+      applyRole(initialRole);
+      detailStage.hidden = true;
+      choiceStage.hidden = false;
+    }
+  })();
+</script>
+{% endblock %}

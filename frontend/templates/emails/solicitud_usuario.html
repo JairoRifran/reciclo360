@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Solicitud registrada</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #24323b;">
+  <h1 style="background:#27ae60; color:white; padding:16px;">Residuos 360</h1>
+  <div style="padding:16px;">
+    <p>Hola {{ solicitud.owner.nombre_visible }},</p>
+    <p>Registramos tu solicitud de retiro correctamente.</p>
+    <ul>
+      <li><strong>ID:</strong> #{{ solicitud.id }}</li>
+      <li><strong>Tipo:</strong> {{ solicitud.tipo }}</li>
+      <li><strong>Peso estimado:</strong> {{ '%.2f'|format(solicitud.peso_estimado) }} kg</li>
+      <li><strong>Transportista:</strong> {{ solicitud.gestor_nombre }}</li>
+      <li><strong>Fecha:</strong> {{ solicitud.fecha_label }}</li>
+    </ul>
+    <p>
+      Podés seguirla desde acá:
+      <a href="{{ url_for('mis_solicitudes', _external=True) }}">Ver mis solicitudes</a>
+    </p>
+  </div>
+</body>
+</html>

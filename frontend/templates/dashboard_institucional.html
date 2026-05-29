@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Panel Institucional IMM | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Panel Institucional IMM</h1>
+            <div class="verification-banner">
+              <strong>{{ current_user.institution_label }}</strong>
+              <span>Herramienta de observacion, trazabilidad y control documental para el piloto institucional.</span>
+            </div>
+          </div>
+
+          <section class="dashboard-intro-card surface-card">
+            <div class="dashboard-intro-copy">
+              <span class="dashboard-kicker"><i class="fa-solid fa-landmark"></i> Visibilidad institucional</span>
+              <h2>Una vista consolidada de retiros, empresas, transportistas y respaldo operativo.</h2>
+              <p>El panel muestra la trazabilidad generada dentro de Residuos 360 sin intervenir en la operacion comercial entre privados.</p>
+            </div>
+            <div class="dashboard-guide-grid">
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-route"></i>
+                <div>
+                  <strong>Retiros trazables</strong>
+                  <span>Seguimiento por empresa, operador, zona y estado documental.</span>
+                </div>
+              </div>
+              <div class="dashboard-guide-item">
+                <i class="fa-regular fa-folder-open"></i>
+                <div>
+                  <strong>Legajo documental</strong>
+                  <span>Contratos, constancias, comprobantes y evidencias en una sola vista.</span>
+                </div>
+              </div>
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-chart-column"></i>
+                <div>
+                  <strong>Reportes exportables</strong>
+                  <span>Informacion estructurada para seguimiento y analisis del piloto.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <form method="get" class="filter-grid institutional-filter-grid">
+            <input type="text" name="empresa" value="{{ filters.empresa }}" placeholder="Empresa o RUT">
+            <input type="text" name="transportista" value="{{ filters.transportista }}" placeholder="Transportista">
+            <input type="text" name="zona" value="{{ filters.zona }}" placeholder="Zona o direccion">
+            <select name="estado">
+              <option value="">Todos los estados</option>
+              {% for estado in ['pendiente','aceptada','retirada','completada','rechazada'] %}
+              <option value="{{ estado }}" {% if filters.estado == estado %}selected{% endif %}>{{ estado|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <div class="institutional-filter-actions">
+              <button type="submit" class="btn btn-primary">Aplicar filtros</button>
+              <a href="{{ url_for('institucional_dashboard') }}" class="btn secondary-btn">Limpiar</a>
+            </div>
+          </form>
+
+          <div class="metrics institutional-summary-grid">
+            <a href="{{ url_for('institucional_empresas') }}" class="metric-card institutional-metric-card metric-ecosystem metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.empresas }}</div><div class="label">Empresas</div><div class="metric-note">Generadores adheridos al piloto</div></div>
+            </a>
+            <a href="{{ url_for('institucional_transportistas') }}" class="metric-card institutional-metric-card metric-ecosystem metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.transportistas }}</div><div class="label">Transportistas</div><div class="metric-note">Operadores visibles para IMM</div></div>
+            </a>
+            <a href="{{ url_for('institucional_retiros', quick='programados') }}" class="metric-card institutional-metric-card metric-operations metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.programados }}</div><div class="label">Programados</div><div class="metric-note">Retiros pendientes o aceptados</div></div>
+            </a>
+            <a href="{{ url_for('institucional_retiros', quick='en_curso') }}" class="metric-card institutional-metric-card metric-operations metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.en_curso }}</div><div class="label">En curso</div><div class="metric-note">Retiros ya ejecutados</div></div>
+            </a>
+            <a href="{{ url_for('institucional_retiros', quick='cerrados') }}" class="metric-card institutional-metric-card metric-operations metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.cerrados }}</div><div class="label">Cerrados</div><div class="metric-note">Trazabilidad operativa finalizada</div></div>
+            </a>
+            <a href="{{ url_for('institucional_retiros', quick='observados') }}" class="metric-card institutional-metric-card metric-alert metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.observados }}</div><div class="label">Observados</div><div class="metric-note">Casos con foco documental</div></div>
+            </a>
+          </div>
+
+          <div class="metrics institutional-summary-grid">
+            <a href="{{ url_for('institucional_retiros', quick='documentacion_completa') }}" class="metric-card institutional-metric-card metric-docs metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.documentacion_completa }}</div><div class="label">Legajos completos</div><div class="metric-note">Servicios con respaldo suficiente</div></div>
+            </a>
+            <a href="{{ url_for('institucional_retiros', quick='documentacion_pendiente') }}" class="metric-card institutional-metric-card metric-docs metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.documentacion_pendiente }}</div><div class="label">Legajos pendientes</div><div class="metric-note">Servicios a revisar o completar</div></div>
+            </a>
+            <a href="{{ url_for('institucional_retiros', quick='contrato_vigente') }}" class="metric-card institutional-metric-card metric-contracts metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.contratos_vigentes }}</div><div class="label">Contratos vigentes</div><div class="metric-note">Base contractual activa</div></div>
+            </a>
+            <a href="{{ url_for('institucional_reportes') }}" class="metric-card institutional-metric-card metric-contracts metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.contratos_por_vencer }}</div><div class="label">Por vencer</div><div class="metric-note">Seguimiento preventivo</div></div>
+            </a>
+            <a href="{{ url_for('institucional_reportes') }}" class="metric-card institutional-metric-card metric-alert metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.contratos_vencidos }}</div><div class="label">Vencidos</div><div class="metric-note">Vinculos contractuales caidos</div></div>
+            </a>
+            <a href="{{ url_for('institucional_reportes') }}" class="metric-card institutional-metric-card metric-timing metric-link institutional-metric-link">
+              <div><div class="value">{{ kpis.tiempo_promedio_cierre_horas }}</div><div class="label">Horas promedio de cierre</div><div class="metric-note">Tiempo medio entre alta y cierre</div></div>
+            </a>
+          </div>
+
+          <div class="grid-2 dashboard-company-grid">
+            <section class="panel-card surface-card">
+              <div class="panel-head">
+                <div>
+                  <h2>Alertas de consistencia</h2>
+                  <p>Casos que ameritan seguimiento documental o revision.</p>
+                </div>
+              </div>
+              <div class="institutional-alert-list">
+                {% for title, solicitud in recent_alerts %}
+                <a href="{{ url_for('institucional_retiro_detalle', sid=solicitud.id) }}" class="institutional-alert-card">
+                  <div class="institutional-alert-icon">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                  </div>
+                  <div class="institutional-alert-body">
+                    <div class="institutional-alert-topline">
+                      <strong>{{ title }}</strong>
+                      {% if 'Contrato' in title %}
+                      <span class="institutional-alert-chip chip-contract">Contrato</span>
+                      {% elif 'Legajo' in title or 'document' in title|lower %}
+                      <span class="institutional-alert-chip chip-doc">Documentacion</span>
+                      {% else %}
+                      <span class="institutional-alert-chip chip-review">Revision</span>
+                      {% endif %}
+                    </div>
+                    <span class="institutional-alert-meta">Retiro #{{ solicitud.id }} &middot; {{ solicitud.empresa }} &middot; {{ solicitud.gestor_nombre or 'Transportista sin asignar' }}</span>
+                  </div>
+                </a>
+                {% else %}
+                <div class="institutional-alert-card empty-state-card">
+                  <div class="institutional-alert-icon">
+                    <i class="fa-regular fa-circle-check"></i>
+                  </div>
+                  <div class="institutional-alert-body">
+                    <div class="institutional-alert-topline">
+                      <strong>Sin alertas activas</strong>
+                    </div>
+                    <span class="institutional-alert-meta">La muestra filtrada no presenta observaciones relevantes.</span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </section>
+
+            <section class="panel-card surface-card">
+              <div class="panel-head">
+                <div>
+                  <h2>Actividad territorial</h2>
+                  <p>Origenes declarados con mayor actividad reciente.</p>
+                </div>
+              </div>
+              {% set top_zone_count = top_zonas[0][1] if top_zonas else 0 %}
+              <div class="territory-activity-list">
+                {% for zona, count in top_zonas %}
+                <div class="territory-activity-card">
+                  <div class="territory-activity-head">
+                    <div>
+                      <strong>{{ zona }}</strong>
+                      <span>{{ count }} retiro(s) registrados</span>
+                    </div>
+                    <div class="territory-activity-count">{{ count }}</div>
+                  </div>
+                  <div class="territory-activity-bar-track">
+                    <div class="territory-activity-bar-fill" style="width: {{ ((count / top_zone_count) * 100) if top_zone_count else 0 }}%;"></div>
+                  </div>
+                  <small>Participacion relativa dentro de las zonas visibles del piloto.</small>
+                </div>
+                {% else %}
+                <div class="territory-activity-card empty-state-card">
+                  <div class="territory-activity-head">
+                    <div>
+                      <strong>Sin datos</strong>
+                      <span>No hay actividad para mostrar.</span>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </section>
+          </div>
+
+          <div class="grid-3 institutional-kicker-grid">
+            <article class="info-box institutional-mini-panel">
+              <strong><i class="fa-solid fa-scale-balanced"></i> Cumplimiento contractual</strong>
+              <p>{{ kpis.pct_contrato_vigente }}% de los retiros visibles hoy cuentan con contrato marco vigente.</p>
+            </article>
+            <article class="info-box institutional-mini-panel">
+              <strong><i class="fa-regular fa-folder-open"></i> Cierre documental</strong>
+              <p>{{ kpis.pct_documentacion_completa }}% de los retiros ya tienen legajo completo o suficientemente respaldado.</p>
+            </article>
+            <article class="info-box institutional-mini-panel">
+              <strong><i class="fa-solid fa-clock"></i> Tiempo de cierre</strong>
+              <p>El tiempo promedio entre alta y cierre documental es de {{ kpis.tiempo_promedio_cierre_horas }} horas.</p>
+            </article>
+          </div>
+
+          <div class="grid-2 dashboard-company-grid">
+            <section class="panel-card surface-card">
+              <div class="panel-head">
+                <div>
+                  <h2>Residuos mas registrados</h2>
+                  <p>Distribucion simple de la actividad declarada.</p>
+                </div>
+              </div>
+              <div class="table-container compact-table">
+                <table>
+                  <thead><tr><th>Residuo</th><th>Cantidad</th></tr></thead>
+                  <tbody>
+                    {% for tipo, count in top_residuos %}
+                    <tr><td>{{ tipo }}</td><td>{{ count }}</td></tr>
+                    {% else %}
+                    <tr><td colspan="2" class="text-center">Sin datos.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel-card surface-card">
+              <div class="panel-head">
+                <div>
+                  <h2>Destinos informados</h2>
+                  <p>Resumen de destinos previstos o reales cargados.</p>
+                </div>
+              </div>
+              <div class="table-container compact-table">
+                <table>
+                  <thead><tr><th>Destino</th><th>Cantidad</th></tr></thead>
+                  <tbody>
+                    {% for destino, count in top_destinos %}
+                    <tr><td>{{ destino }}</td><td>{{ count }}</td></tr>
+                    {% else %}
+                    <tr><td colspan="2" class="text-center">Sin datos.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel-card surface-card">
+            <div class="panel-head inline-head">
+              <div>
+                <h2>Vista rapida de retiros</h2>
+                <p>Ultimos retiros visibles dentro del piloto institucional.</p>
+              </div>
+              <a href="{{ url_for('institucional_retiros') }}" class="btn secondary-btn">Ver todos</a>
+            </div>
+            <div class="table-container institutional-table-shell">
+              <table class="institutional-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Empresa</th>
+                    <th>Transportista</th>
+                    <th>Zona</th>
+                    <th>Residuo</th>
+                    <th>Estado</th>
+                    <th>Documental</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for solicitud in solicitudes[:10] %}
+                  <tr>
+                    <td><a href="{{ url_for('institucional_retiro_detalle', sid=solicitud.id) }}">#{{ solicitud.id }}</a></td>
+                    <td>
+                      <strong>{{ solicitud.empresa }}</strong>
+                      <small>{{ solicitud.owner.rut if solicitud.owner and solicitud.owner.rut else 'RUT no cargado' }}</small>
+                    </td>
+                    <td>
+                      <strong>{{ solicitud.gestor_nombre }}</strong>
+                      <small>{{ solicitud.vehiculo_matricula or 'Sin matricula' }}</small>
+                    </td>
+                    <td>
+                      <strong>{{ solicitud.ubicacion }}</strong>
+                      <small>{{ solicitud.direccion_retiro or 'Direccion no detallada' }}</small>
+                    </td>
+                    <td>
+                      <strong>{{ solicitud.tipo }}</strong>
+                      <small>{{ solicitud.categoria_residuo or 'Categoria general' }}</small>
+                    </td>
+                    <td><span class="status-chip status-{{ solicitud.estado }}">{{ solicitud.estado|capitalize }}</span></td>
+                    <td><span class="status-chip status-chip-neutral">{{ estado_documental_label(solicitud.estado_documental) }}</span></td>
+                  </tr>
+                  {% else %}
+                  <tr><td colspan="7" class="text-center">No hay retiros para mostrar.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Previsualizacion de Contrato | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h2>Previsualizacion del contrato marco</h2>
+          <p>Este documento muestra el marco legal entre la empresa generadora y el transportista habilitado, junto con el anexo preliminar del retiro que estas preparando.</p>
+        </div>
+        <div class="contract-preview-actions">
+          <a href="{{ export_url }}" class="btn">
+            <i class="fa-solid fa-download"></i> Exportar borrador
+          </a>
+          <a href="{{ url_for('contratos') }}#contrato-{{ contract.id }}" class="btn secondary-btn">
+            <i class="fa-solid fa-folder-open"></i> Ir a contratos
+          </a>
+        </div>
+      </div>
+
+      <div class="request-contract-banner {% if contract.vigente %}is-ready{% else %}is-pending{% endif %}">
+        <div class="request-contract-banner-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+        <div>
+          <strong>
+            {% if contract.vigente %}
+            Ya existe un contrato marco vigente entre las partes
+            {% else %}
+            El contrato marco aun requiere activacion o firma
+            {% endif %}
+          </strong>
+          <p>
+            {% if contract.vigente %}
+            Este vinculo ya esta listo para respaldar nuevas ordenes de servicio con este operador.
+            {% else %}
+            Puedes revisar el texto desde ahora. El retiro quedara completamente operativo cuando el contrato marco quede vigente.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+
+      <article class="surface-card contract-preview-sheet">
+        <div class="contract-preview-head">
+          <span class="service-kicker">Documento generado por Residuos 360</span>
+          <h1>Contrato Marco de Recoleccion y Transporte de Residuos No Domiciliarios</h1>
+          <p>Estado actual: <span class="status-chip {% if contract.vigente %}status-chip-success{% else %}status-chip-warning{% endif %}">{{ contract_state_label(contract.estado) }}</span></p>
+        </div>
+
+        <div class="contract-preview-meta">
+          <div class="contract-preview-meta-card">
+            <span>Empresa generadora</span>
+            <strong>{{ empresa.razon_social or empresa.nombre_visible }}</strong>
+            <p>RUT: {{ empresa.rut or 'No informado' }}</p>
+            <p>Domicilio: {{ empresa.domicilio_fiscal or empresa.direccion_base or empresa.ubicacion or 'No informado' }}</p>
+          </div>
+          <div class="contract-preview-meta-card">
+            <span>Transportista habilitado</span>
+            <strong>{{ gestor.razon_social or gestor.nombre_visible }}</strong>
+            <p>RUT: {{ gestor.rut or gestor.ministerio_rut or 'No informado' }}</p>
+            <p>Habilitacion: {{ gestor.numero_habilitacion or gestor.ministerio_estado or 'No informada' }}</p>
+          </div>
+          <div class="contract-preview-meta-card">
+            <span>Vigencia prevista</span>
+            <strong>{{ contract.vigencia_desde.strftime('%d/%m/%Y') if contract.vigencia_desde else 'A definir' }} al {{ contract.vigencia_hasta.strftime('%d/%m/%Y') if contract.vigencia_hasta else 'A definir' }}</strong>
+            <p>Proveedor de firma: {{ contract.proveedor_firma or 'firma_avanzada_externa' }}</p>
+            <p>Hash de referencia: {{ contract.contrato_hash[:16] if contract.contrato_hash else 'Pendiente' }}{% if contract.contrato_hash %}...{% endif %}</p>
+          </div>
+        </div>
+
+        <div class="contract-preview-body">
+          <section>
+            <h3>1. Objeto</h3>
+            <p>El presente contrato marco regula la relacion entre la empresa generadora y el transportista habilitado para coordinar retiros de residuos no domiciliarios mediante la plataforma Residuos 360.</p>
+          </section>
+
+          <section>
+            <h3>2. Alcance y partes</h3>
+            <p>La empresa generadora declara ser responsable de los residuos que entrega, y el transportista declara encontrarse habilitado para realizar las tareas de retiro y traslado conforme a la normativa aplicable.</p>
+            <p>Residuos 360 actua exclusivamente como plataforma de gestion documental, trazabilidad, coordinacion operativa y soporte contractual, sin asumir el rol de transportista ni de gestor de residuos.</p>
+          </section>
+
+          <section>
+            <h3>3. Tipos de residuos cubiertos</h3>
+            <p>{{ contract.tipos_residuo or (residue.label if residue else 'Se definiran segun cada orden de servicio emitida en la plataforma.') }}</p>
+          </section>
+
+          <section>
+            <h3>4. Direcciones y cobertura</h3>
+            <p>Direcciones cubiertas por este marco: {{ contract.direcciones_cubiertas or empresa.direccion_base or direccion or 'A definir' }}.</p>
+            <p>Zona de referencia del transportista: {{ gestor.ubicacion or 'No informada' }}{% if gestor.zonas_cobertura %}. Cobertura declarada: {{ gestor.zonas_cobertura }}{% endif %}.</p>
+          </section>
+
+          <section>
+            <h3>5. Obligaciones documentales</h3>
+            <p>Cada retiro quedara respaldado por una orden de servicio, constancia de retiro y cierre documental con trazabilidad, incluyendo evidencia, peso y destino final cuando corresponda.</p>
+          </section>
+
+          <section>
+            <h3>6. Uso de Residuos 360</h3>
+            <p>Las partes aceptan utilizar Residuos 360 para generar, almacenar y consultar documentos, evidencia, eventos operativos y constancias asociadas a cada retiro.</p>
+          </section>
+
+          <section>
+            <h3>7. Firma electronica avanzada</h3>
+            <p>El contrato marco y las ordenes de servicio podran ser firmadas electronicamente por representantes autorizados, conservando trazabilidad de version, firmantes, fecha y soporte documental.</p>
+          </section>
+        </div>
+      </article>
+
+      <article class="surface-card contract-preview-sheet contract-preview-annex">
+        <div class="contract-preview-head">
+          <span class="service-kicker">Anexo preliminar del retiro</span>
+          <h2>Orden de Servicio asociada a esta solicitud</h2>
+          <p>Este resumen se completa con los datos actuales del formulario antes del envio.</p>
+        </div>
+
+        <div class="contract-preview-meta">
+          <div class="contract-preview-meta-card">
+            <span>Residuo</span>
+            <strong>{{ residue.label if residue else 'No definido aun' }}</strong>
+            <p>Riesgo: {{ residue.risk if residue else 'Pendiente' }}</p>
+          </div>
+          <div class="contract-preview-meta-card">
+            <span>Origen del retiro</span>
+            <strong>{{ direccion or 'Pendiente' }}</strong>
+            <p>Zona: {{ ubicacion or 'Pendiente' }}</p>
+          </div>
+          <div class="contract-preview-meta-card">
+            <span>Programacion</span>
+            <strong>{{ fecha_retiro.strftime('%d/%m/%Y') if fecha_retiro else 'Pendiente' }}</strong>
+            <p>Franja horaria: {{ franja_horaria or 'Pendiente' }}</p>
+            <p>Peso estimado: {{ '%.2f'|format(peso_estimado or 0) }} kg{% if volumen_estimado_m3 %} · Volumen: {{ '%.2f'|format(volumen_estimado_m3) }} m3{% endif %}</p>
+          </div>
+        </div>
+
+        {% if quote_preview %}
+        <div class="preview-breakdown contract-preview-breakdown">
+          <p>Transporte: <span>UYU {{ '%.2f'|format(quote_preview.transport_total or 0) }}</span></p>
+          <p>Gestion / tratamiento: <span>UYU {{ '%.2f'|format(quote_preview.management_total or 0) }}</span></p>
+          <p>Certificado: <span>UYU {{ '%.2f'|format(quote_preview.certificate_total or 0) }}</span></p>
+          <p>Fee plataforma: <span>UYU {{ '%.2f'|format(quote_preview.platform_fee or 0) }}</span></p>
+          <p>Total estimado: <strong>UYU {{ '%.2f'|format(quote_preview.total or 0) }}</strong></p>
+        </div>
+        {% else %}
+        <div class="info-box">
+          <strong>Faltan datos para completar el anexo economico</strong>
+          <p>Para ver el detalle estimado de la orden de servicio, completa el residuo, el peso estimado y los datos basicos del retiro desde el formulario.</p>
+        </div>
+        {% endif %}
+      </article>
+    </div>
+  </div>
+</section>
+{% endblock %}

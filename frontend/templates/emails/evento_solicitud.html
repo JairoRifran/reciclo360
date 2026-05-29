@@ -1,0 +1,14 @@
+<div style="font-family: Arial, sans-serif; color: #1f2a2c; line-height: 1.5;">
+  <h2 style="margin-bottom: 8px;">{{ event_title }}</h2>
+  <p style="margin: 0 0 12px;">Estado actual: <strong>{{ event_status }}</strong></p>
+  <p style="margin: 0 0 12px;">Solicitud <strong>#{{ solicitud.id }}</strong> · {{ solicitud.tipo }} · {{ solicitud.empresa }}</p>
+  <p style="margin: 0 0 12px;">{{ event_detail }}</p>
+  <ul style="padding-left: 18px; margin: 0 0 12px;">
+    <li>Operador: {{ solicitud.gestor_nombre }}</li>
+    <li>Zona: {{ solicitud.ubicacion }}</li>
+    <li>Fecha: {{ solicitud.fecha_label }}</li>
+    <li>Total estimado / final: UYU {{ '%.2f'|format(solicitud.total_uyu or solicitud.precio_final or solicitud.precio_estimado) }}</li>
+  </ul>
+  <p style="margin: 0 0 12px;">Siguiente paso: {{ next_step }}</p>
+  <p style="margin: 0;">Ingresá a Residuos 360 para revisar el detalle y la documentación asociada.</p>
+</div>

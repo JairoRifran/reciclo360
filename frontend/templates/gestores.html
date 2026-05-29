@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Operadores | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="panel-card">
+      <div class="panel-head">
+        <h2>Operadores publicados</h2>
+        <p>Explora operadores visibles por zona, capacidad y estado de verificacion para coordinar retiros con mas criterio.</p>
+      </div>
+
+      <div class="filters-inline">
+        <input type="text" id="filtro-ubicacion" placeholder="Filtrar por ubicacion">
+      </div>
+
+      <div id="gestores-container" class="operator-grid"></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const container = document.getElementById('gestores-container');
+    const filter = document.getElementById('filtro-ubicacion');
+    let gestores = [];
+
+    function infoLine(label, value) {
+      if (!value) return '';
+      return `
+        <div class="operator-detail">
+          <span>${label}</span>
+          <strong>${value}</strong>
+        </div>
+      `;
+    }
+
+    function iconInfo(icon, label, value) {
+      if (!value) return '';
+      return `
+        <div class="operator-highlight operator-highlight-icon">
+          <i class="${icon}"></i>
+          <div>
+            <span>${label}</span>
+            <strong>${value}</strong>
+          </div>
+        </div>
+      `;
+    }
+
+    function operatorStatus(g) {
+      if (g.verificado_ministerio) {
+        return '<span class="status-chip status-aceptada">Verificado</span>';
+      }
+      if (g.habilitado) {
+        return '<span class="status-chip status-pendiente">Habilitacion informada</span>';
+      }
+      return '<span class="status-chip status-rechazada">Sin verificacion</span>';
+    }
+
+    function operatorStars(g) {
+      const average = Number(g.rating_average || 0);
+      const count = Number(g.rating_count || 0);
+      if (!count) {
+        return '<div class="operator-rating-empty">Sin valoraciones todavia</div>';
+      }
+      const filled = Math.round(average);
+      const stars = Array.from({ length: 5 }, (_, index) => {
+        const active = index < filled ? 'is-filled' : '';
+        return `<span class="rating-star ${active}">&#9733;</span>`;
+      }).join('');
+      return `
+        <div class="operator-rating-block">
+          <div class="rating-stars rating-stars-inline">${stars}</div>
+          <span>${average.toFixed(1)}/5 · ${count} valoracion(es)</span>
+        </div>
+      `;
+    }
+
+    function categoryChips(value) {
+      const items = String(value || '')
+        .split(/[,;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+      if (!items.length) {
+        return '<span class="operator-chip muted">Sin categorias cargadas</span>';
+      }
+
+      return items
+        .slice(0, 4)
+        .map((item) => `<span class="operator-chip">${item}</span>`)
+        .join('');
+    }
+
+    function render() {
+      const query = (filter.value || '').trim().toLowerCase();
+      const filtered = gestores.filter((g) => {
+        if (!query) return true;
+        const haystack = [g.ubicacion || '', g.zonas_cobertura || '', g.nombre || ''].join(' ').toLowerCase();
+        return haystack.includes(query);
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = '<p class="text-center">No hay operadores que coincidan con ese filtro.</p>';
+        return;
+      }
+
+      container.innerHTML = filtered.map((g) => `
+        <article class="operator-market-card">
+          <div class="operator-card-top">
+            <div>
+              <p class="operator-kicker">Operador publicado</p>
+              <h3 class="verified-name">
+                <span>${g.nombre}</span>
+                ${(g.verificado_ministerio || g.habilitado) ? `
+                  <span class="verified-check" title="Verificado con fuente oficial">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                ` : ''}
+              </h3>
+              <div class="operator-card-subline">
+                <i class="fa-solid fa-location-dot"></i>
+                <span>${g.ubicacion || 'Zona a confirmar'}</span>
+              </div>
+            </div>
+            ${operatorStatus(g)}
+          </div>
+
+          <div class="operator-highlights">
+            ${iconInfo('fa-solid fa-map', 'Zona', g.ubicacion || 'Sin zona')}
+            ${iconInfo('fa-solid fa-wallet', 'Base retiro', `UYU ${Number(g.tarifa_base_retiro || 0).toFixed(2)}`)}
+            ${iconInfo('fa-regular fa-envelope', 'Contacto', g.contacto || 'A confirmar')}
+          </div>
+
+          <div class="operator-middle-row">
+            ${operatorStars(g)}
+            <div class="operator-chip-row">
+              ${categoryChips(g.categorias_operativas || g.ministerio_categorias)}
+            </div>
+          </div>
+
+          <details class="operator-accordion">
+            <summary>
+              <div>
+                <strong>Ver detalle oficial y operativo</strong>
+                <span>Habilitacion, cobertura, tarifas y validacion oficial</span>
+              </div>
+              <i class="fa-solid fa-chevron-down"></i>
+            </summary>
+
+            <div class="operator-details-grid">
+              ${infoLine('RUT o habilitacion', g.ministerio_rut || g.numero_habilitacion || 'No informado')}
+              ${infoLine('Modalidad', g.ministerio_modalidad || 'No informada')}
+              ${infoLine('Estado oficial', g.ministerio_estado || 'Sin dato oficial')}
+              ${infoLine('Categorias oficiales', g.ministerio_categorias || 'Sin dato oficial')}
+              ${infoLine('Categorias operativas', g.categorias_operativas || 'Pendiente de carga')}
+              ${infoLine('Cobertura declarada', g.zonas_cobertura || g.ubicacion || 'Sin detalle')}
+              ${infoLine('Radio operativo', `${Number(g.radio_cobertura_km || 0).toFixed(0)} km`)}
+              ${infoLine('Tarifa por km', `UYU ${Number(g.tarifa_km || 0).toFixed(2)}`)}
+              ${infoLine('Tarifa por m3', `UYU ${Number(g.tarifa_m3 || 0).toFixed(2)}`)}
+              ${infoLine('Tratamiento por kg', `UYU ${Number(g.tarifa_tratamiento_kg || 0).toFixed(2)}`)}
+              ${infoLine('Ultima verificacion', g.verificacion_actualizada_en || 'Sin sincronizar')}
+            </div>
+
+            <div class="operator-validation">
+              <strong>Validacion</strong>
+              <p>${g.verificacion_observacion || 'Sin observaciones de verificacion.'}</p>
+              <p>
+                <span>Fuente:</span>
+                ${g.verificacion_fuente ? `<a href="${g.verificacion_fuente}" target="_blank" rel="noopener noreferrer">Ministerio de Ambiente</a>` : 'No disponible'}
+              </p>
+            </div>
+          </details>
+
+          <div class="operator-card-actions">
+            <a class="btn" href="/solicitar"><i class="fa-solid fa-plus"></i> Solicitar retiro</a>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    fetch('/api/gestores')
+      .then((res) => res.json())
+      .then((data) => {
+        gestores = data;
+        render();
+      })
+      .catch(() => {
+        container.innerHTML = '<p class="text-center">No se pudo cargar la lista de operadores.</p>';
+      });
+
+    filter.addEventListener('input', render);
+  })();
+</script>
+{% endblock %}

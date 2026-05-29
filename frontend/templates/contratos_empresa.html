@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Contratos | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Contratos y ordenes de servicio</h1>
+          </div>
+
+          <section class="dashboard-intro-card surface-card">
+            <div class="dashboard-intro-copy">
+              <span class="dashboard-kicker"><i class="fa-solid fa-file-signature"></i> Marco legal operativo</span>
+              <h2>Antes del primer retiro con cada transportista debe existir contrato marco vigente.</h2>
+              <p>Residuos 360 te ayuda a preparar el vinculo, guardar el PDF firmado externamente y usarlo como base para cada orden de servicio.</p>
+            </div>
+            <div class="dashboard-guide-grid">
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-file-contract"></i>
+                <div>
+                  <strong>Contrato marco</strong>
+                  <span>Se firma una sola vez por cada relacion empresa transportista.</span>
+                </div>
+              </div>
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <div>
+                  <strong>Orden por retiro</strong>
+                  <span>Cada solicitud posterior queda vinculada a este marco contractual.</span>
+                </div>
+              </div>
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-shield-check"></i>
+                <div>
+                  <strong>Respaldo para cumplimiento</strong>
+                  <span>Solo queda completo cuando el marco esta vigente y el retiro tiene evidencia.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="metrics company-summary-grid">
+            <div class="institutional-metric-card metric-contracts">
+              <div class="value">{{ contract_summary.total }}</div>
+              <div class="label">Vinculos totales</div>
+              <div class="metric-note">Transportistas con marco abierto en tu cuenta.</div>
+            </div>
+            <div class="institutional-metric-card metric-operations">
+              <div class="value">{{ contract_summary.vigentes }}</div>
+              <div class="label">Vigentes</div>
+              <div class="metric-note">Listos para soportar nuevos retiros.</div>
+            </div>
+            <div class="institutional-metric-card metric-docs">
+              <div class="value">{{ contract_summary.pendientes }}</div>
+              <div class="label">Pendientes</div>
+              <div class="metric-note">Todavia requieren datos o alguna firma.</div>
+            </div>
+            <div class="institutional-metric-card metric-alert">
+              <div class="value">{{ contract_summary.vencidos }}</div>
+              <div class="label">Por vencer / vencidos</div>
+              <div class="metric-note">Conviene revisarlos antes del proximo retiro.</div>
+            </div>
+          </div>
+
+          <div class="declaration-card-list">
+            {% for contract in contracts %}
+            {% set setup_ready = contract.tipos_residuo or contract.direcciones_cubiertas or contract.contrato_borrador %}
+            {% set company_signed = contract.empresa_firmado_en %}
+            {% set operator_signed = contract.gestor_firmado_en %}
+            {% set is_active = contract.vigente %}
+            {% if is_active %}
+              {% set contract_alert_tone = 'is-success' %}
+              {% set contract_alert_title = 'Contrato vigente y listo para operar' %}
+              {% set contract_alert_copy = 'El marco ya quedo completo. Puedes seguir generando retiros con este transportista sobre esta base contractual.' %}
+            {% elif not setup_ready %}
+              {% set contract_alert_tone = 'is-warning' %}
+              {% set contract_alert_title = 'Falta preparar el marco contractual' %}
+              {% set contract_alert_copy = 'Completa primero los datos base, la vigencia y sube al menos un borrador para dejar pronto el expediente inicial.' %}
+            {% elif not company_signed %}
+              {% set contract_alert_tone = 'is-accent' %}
+              {% set contract_alert_title = 'Falta tu firma como empresa' %}
+              {% set contract_alert_copy = 'El siguiente paso es subir el PDF ya firmado por tu representante para dejar registrada la aceptacion de tu parte.' %}
+            {% else %}
+              {% set contract_alert_tone = 'is-warning' %}
+              {% set contract_alert_title = 'Contrato a la espera del transportista' %}
+              {% set contract_alert_copy = 'Tu parte ya esta pronta. Ahora debes esperar a que el operador suba su PDF firmado para activar el marco.' %}
+            {% endif %}
+
+            <section id="contrato-{{ contract.id }}" class="declaration-card surface-card contract-card-enhanced">
+              <div class="declaration-card-head">
+                <div>
+                  <p class="service-kicker">Transportista vinculado</p>
+                  <h2>{{ contract.gestor_user.nombre_visible }}</h2>
+                  <p>{{ contract.gestor_user.ubicacion or 'Zona sin definir' }} · {{ contract.gestor_user.numero_habilitacion or 'Sin habilitacion cargada' }}</p>
+                </div>
+                <div class="declaration-head-meta">
+                  <span class="status-chip {% if contract.vigente %}status-aceptada{% else %}status-pendiente{% endif %}">{{ contract_state_label(contract.estado) }}</span>
+                </div>
+              </div>
+
+              <div class="contract-alert-banner {{ contract_alert_tone }}">
+                <div class="contract-alert-copy">
+                  <strong>{{ contract_alert_title }}</strong>
+                  <p>{{ contract_alert_copy }}</p>
+                </div>
+                <div class="contract-alert-side">
+                  {% if is_active %}
+                  <span class="status-chip status-chip-success">Sin acciones pendientes</span>
+                  {% elif not setup_ready %}
+                  <span class="status-chip status-chip-warning">Accion requerida ahora</span>
+                  {% elif not company_signed %}
+                  <span class="status-chip status-chip-neutral">Te toca firmar</span>
+                  {% else %}
+                  <span class="status-chip status-chip-warning">Esperando al operador</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="contract-flow-strip">
+                <div class="contract-flow-step {% if setup_ready %}is-done{% else %}is-current{% endif %}">
+                  <span>1</span>
+                  <div>
+                    <strong>Preparar marco</strong>
+                    <small>{% if setup_ready %}Base documental cargada.{% else %}Faltan datos o borrador inicial.{% endif %}</small>
+                  </div>
+                </div>
+                <div class="contract-flow-step {% if company_signed %}is-done{% elif setup_ready %}is-current{% endif %}">
+                  <span>2</span>
+                  <div>
+                    <strong>Firma empresa</strong>
+                    <small>{% if company_signed %}Firma registrada correctamente.{% else %}Sube el PDF firmado por tu empresa.{% endif %}</small>
+                  </div>
+                </div>
+                <div class="contract-flow-step {% if operator_signed %}is-done{% elif company_signed %}is-current{% endif %}">
+                  <span>3</span>
+                  <div>
+                    <strong>Firma transportista</strong>
+                    <small>{% if operator_signed %}Marco activado y vigente.{% else %}Queda pendiente la accion del operador.{% endif %}</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="declaration-stat-grid">
+                <div class="declaration-stat-card"><span>Vigencia desde</span><strong>{{ contract.vigencia_desde.strftime('%d/%m/%Y') if contract.vigencia_desde else 'Sin inicio' }}</strong></div>
+                <div class="declaration-stat-card"><span>Vigencia hasta</span><strong>{{ contract.vigencia_hasta.strftime('%d/%m/%Y') if contract.vigencia_hasta else 'Sin fin' }}</strong></div>
+                <div class="declaration-stat-card"><span>Firma empresa</span><strong>{{ contract.empresa_firmado_en.strftime('%d/%m/%Y %H:%M') if contract.empresa_firmado_en else 'Pendiente' }}</strong></div>
+                <div class="declaration-stat-card"><span>Firma transportista</span><strong>{{ contract.gestor_firmado_en.strftime('%d/%m/%Y %H:%M') if contract.gestor_firmado_en else 'Pendiente' }}</strong></div>
+              </div>
+
+              <div class="contract-workspace-grid">
+                <div class="info-box contract-summary-panel">
+                  <span class="contract-panel-kicker">Resumen del vinculo</span>
+                  <strong>Este marco regula la relacion con {{ contract.gestor_user.nombre_visible }}.</strong>
+                  <p>{{ contract.ordenes_servicio|length }} retiro(s) se apoyan en este contrato como base operativa.</p>
+                  <p>{{ contract.observaciones or 'Sin observaciones registradas por ahora.' }}</p>
+                  <div class="contract-mini-checklist">
+                    <span class="{% if setup_ready %}is-done{% else %}is-pending{% endif %}">Datos base</span>
+                    <span class="{% if company_signed %}is-done{% else %}is-pending{% endif %}">Firma empresa</span>
+                    <span class="{% if operator_signed %}is-done{% else %}is-pending{% endif %}">Firma transportista</span>
+                  </div>
+                </div>
+
+                <div class="info-box contract-documents-panel">
+                  <span class="contract-panel-kicker">Documentos del marco</span>
+                  <strong>Accesos rapidos al expediente</strong>
+                  <div class="doc-links">
+                    {% if contract.contrato_borrador %}<a href="{{ contract.contrato_borrador }}" target="_blank">Ver borrador</a>{% endif %}
+                    {% if contract.contrato_firmado %}<a href="{{ contract.contrato_firmado }}" target="_blank">Ver PDF firmado</a>{% endif %}
+                    {% if not contract.contrato_borrador and not contract.contrato_firmado %}<span class="muted-label">Todavia no hay documentos cargados.</span>{% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <details class="accordion-card declaration-form-card" {% if not contract.vigente %}open{% endif %}>
+                <summary>
+                  <div>
+                    <strong>1. Preparar y editar contrato marco</strong>
+                    <span>Completa alcance, vigencia, observaciones y el borrador base del documento.</span>
+                  </div>
+                  <span class="accordion-icon">+</span>
+                </summary>
+                <form action="{{ url_for('contrato_crear', gestor_id=contract.gestor_user.id) }}" method="post" enctype="multipart/form-data" class="stack-form accordion-form">
+                  <div class="grid-2">
+                    <label>
+                      Tipos de residuo cubiertos
+                      <input type="text" name="tipos_residuo" value="{{ contract.tipos_residuo or '' }}" placeholder="Ej. carton, plastico, sanitario comun">
+                    </label>
+                    <label>
+                      Direcciones cubiertas
+                      <input type="text" name="direcciones_cubiertas" value="{{ contract.direcciones_cubiertas or '' }}" placeholder="Direcciones o sucursales">
+                    </label>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Vigencia desde
+                      <input type="date" name="vigencia_desde" value="{{ contract.vigencia_desde.isoformat() if contract.vigencia_desde else '' }}">
+                    </label>
+                    <label>
+                      Vigencia hasta
+                      <input type="date" name="vigencia_hasta" value="{{ contract.vigencia_hasta.isoformat() if contract.vigencia_hasta else '' }}">
+                    </label>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Borrador de contrato
+                      <input type="file" name="contrato_borrador" accept=".pdf,.doc,.docx">
+                    </label>
+                    <label>
+                      Observaciones
+                      <input type="text" name="observaciones" value="{{ contract.observaciones or '' }}" placeholder="Notas de alcance, frecuencia, restricciones">
+                    </label>
+                  </div>
+                  <button type="submit" class="btn secondary-btn">Guardar borrador</button>
+                </form>
+              </details>
+
+              <div class="contract-action-grid">
+                <form action="{{ url_for('contrato_firmar_empresa', cid=contract.id) }}" method="post" enctype="multipart/form-data" class="info-box contract-action-card contract-action-primary">
+                  <span class="contract-panel-kicker">2. Firma empresa</span>
+                  <strong>Registrar PDF firmado por tu empresa</strong>
+                  <p>Sube el PDF ya firmado externamente por tu representante autorizado para dejar constancia en la plataforma.</p>
+                  <input type="file" name="contrato_firmado" accept=".pdf,application/pdf" required>
+                  <small class="muted-label">Formato esperado: PDF firmado externamente.</small>
+                  <button type="submit" class="btn secondary-btn">{% if company_signed %}Actualizar firma empresa{% else %}Registrar firma empresa{% endif %}</button>
+                </form>
+                <div class="info-box contract-action-card">
+                  <span class="contract-panel-kicker">3. Firma transportista</span>
+                  <strong>Lo siguiente lo completa el operador</strong>
+                  <p>Cuando el transportista suba el PDF firmado externamente, el marco quedara vigente y los retiros podran aceptarse con normalidad.</p>
+                  <div class="contract-next-state">
+                    <span class="status-chip {% if operator_signed %}status-aceptada{% else %}status-pendiente{% endif %}">{% if operator_signed %}Firma completada{% else %}Pendiente de transportista{% endif %}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+            {% else %}
+            <div class="empty-state-card">
+              <i class="fa-regular fa-folder-open"></i>
+              <h3>Aun no hay contratos preparados</h3>
+              <p>Crea una solicitud con un transportista y Residuos 360 te abrira el contrato marco para completar y dejar vigente.</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

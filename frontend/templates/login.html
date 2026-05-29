@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Ingresar | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container auth-shell">
+    <div class="auth-card">
+      <h2>Ingresar</h2>
+      <p class="auth-copy">Accedé a tu panel para pedir retiros, seguir servicios o administrar tu operación.</p>
+
+      <form action="{{ url_for('login') }}" method="post" class="stack-form">
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" name="email" placeholder="contacto@empresa.uy" required>
+
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password" placeholder="Tu contraseña" required>
+
+        <button type="submit" class="btn">Entrar</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

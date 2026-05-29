@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Centro Documental Operador | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <p>{{ current_user.email }}</p>
+        <h1>Centro documental del operador</h1>
+      </div>
+
+      <div class="dashboard-actions dashboard-actions-tight">
+        <a href="{{ url_for('dashboard') }}" class="btn secondary-btn">Volver al panel</a>
+      </div>
+
+      <div class="dashboard-filter-pills">
+        <a href="{{ url_for('documentos') }}" class="filter-pill {% if not selected_estado %}filter-pill-active{% endif %}">Todo</a>
+        <a href="{{ url_for('documentos', estado='aceptada') }}" class="filter-pill {% if selected_estado == 'aceptada' %}filter-pill-active{% endif %}">En curso</a>
+        <a href="{{ url_for('documentos', estado='retirada') }}" class="filter-pill {% if selected_estado == 'retirada' %}filter-pill-active{% endif %}">Retiradas</a>
+        <a href="{{ url_for('documentos', estado='completada') }}" class="filter-pill {% if selected_estado == 'completada' %}filter-pill-active{% endif %}">Completadas</a>
+        <a href="{{ url_for('documentos', estado='rechazada') }}" class="filter-pill {% if selected_estado == 'rechazada' %}filter-pill-active{% endif %}">Rechazadas</a>
+      </div>
+
+      <div class="metrics">
+        <div class="metric-card"><div><div class="value">{{ doc_summary.requests }}</div><div class="label">Servicios</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ doc_summary.files }}</div><div class="label">Archivos</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ doc_summary.complete }}</div><div class="label">Completos</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ doc_summary.pending }}</div><div class="label">Sin respaldo</div></div></div>
+      </div>
+
+      <div class="document-docket-list">
+        {% for s in solicitudes %}
+        <article class="document-docket-card">
+          <details class="document-docket-toggle">
+            <summary class="document-docket-top">
+              <div class="document-docket-main">
+                <div class="document-docket-kicker">Servicio #{{ s.id }}</div>
+                <h3>{{ s.empresa }}</h3>
+                <p>{{ s.tipo }} &middot; {{ s.categoria_residuo or 'Categoria sin definir' }}</p>
+                <div class="document-docket-glance">
+                  <span><i class="fa-regular fa-calendar"></i> {{ s.fecha_label }}</span>
+                  <span><i class="fa-solid fa-location-dot"></i> {{ s.ubicacion }}</span>
+                  <span><i class="fa-solid fa-paperclip"></i> {{ (1 if s.comprobante_peso else 0) + (1 if s.evidencia_retiro else 0) + (1 if s.certificado_destino else 0) }} adjunto(s)</span>
+                </div>
+              </div>
+              <div class="document-docket-summary-side">
+                <div class="document-docket-statuses">
+                  <span class="status-chip status-{{ s.estado }}">{{ s.estado|capitalize }}</span>
+                  {% if s.documentacion_completa %}
+                  <span class="status-chip status-success">Respaldo completo</span>
+                  {% else %}
+                  <span class="status-chip status-warning">Faltan adjuntos</span>
+                  {% endif %}
+                </div>
+                <span class="document-docket-expand" aria-hidden="true"><i class="fa-solid fa-plus"></i></span>
+              </div>
+            </summary>
+
+            <div class="document-docket-grid">
+              <div class="document-docket-panel">
+                <div class="document-docket-panel-title"><i class="fa-solid fa-memo-circle-info"></i> Memorandum del retiro</div>
+                <div class="document-docket-facts">
+                  <div><span>Fecha</span><strong>{{ s.fecha_label }}</strong></div>
+                  <div><span>Zona</span><strong>{{ s.ubicacion }}</strong></div>
+                  <div><span>Direccion</span><strong>{{ s.direccion_retiro or 'Sin direccion cargada' }}</strong></div>
+                  <div><span>Peso estimado</span><strong>{{ '%.2f'|format(s.peso_estimado) }} kg</strong></div>
+                  <div><span>Peso real</span><strong>{% if s.peso_real %}{{ '%.2f'|format(s.peso_real) }} kg{% else %}Sin informar{% endif %}</strong></div>
+                  <div><span>Destino final</span><strong>{{ s.destino_final or 'Pendiente de informar' }}</strong></div>
+                  <div><span>Retiro realizado</span><strong>{{ s.retirada_en.strftime('%d/%m/%Y %H:%M') if s.retirada_en else 'Pendiente' }}</strong></div>
+                  <div><span>Entrego / recibio</span><strong>{{ s.retiro_entregado_por or 'Sin dato' }} &middot; {{ s.retiro_recibido_por or 'Sin dato' }}</strong></div>
+                </div>
+                <div class="document-docket-note">
+                  <strong>Observaciones</strong>
+                  <p>{{ s.retiro_observaciones or s.observaciones or 'No se cargaron observaciones adicionales para este servicio.' }}</p>
+                </div>
+              </div>
+
+              <div class="document-docket-panel">
+                <div class="document-docket-panel-title"><i class="fa-solid fa-paperclip"></i> Adjuntos y comprobantes</div>
+                <div class="document-attachments">
+                  <a href="{{ s.comprobante_peso if s.comprobante_peso else '#' }}" class="document-attachment {% if not s.comprobante_peso %}is-empty{% endif %}" {% if s.comprobante_peso %}target="_blank"{% endif %}>
+                    <i class="fa-solid fa-scale-balanced"></i>
+                    <div>
+                      <strong>Comprobante de peso</strong>
+                      <span>{% if s.comprobante_peso %}Abrir archivo{% else %}No adjunto{% endif %}</span>
+                    </div>
+                  </a>
+                  <a href="{{ s.evidencia_retiro if s.evidencia_retiro else '#' }}" class="document-attachment {% if not s.evidencia_retiro %}is-empty{% endif %}" {% if s.evidencia_retiro %}target="_blank"{% endif %}>
+                    <i class="fa-solid fa-camera"></i>
+                    <div>
+                      <strong>Evidencia de retiro</strong>
+                      <span>{% if s.evidencia_retiro %}Abrir archivo{% else %}No adjunto{% endif %}</span>
+                    </div>
+                  </a>
+                  <a href="{{ s.certificado_destino if s.certificado_destino else '#' }}" class="document-attachment {% if not s.certificado_destino %}is-empty{% endif %}" {% if s.certificado_destino %}target="_blank"{% endif %}>
+                    <i class="fa-solid fa-file-shield"></i>
+                    <div>
+                      <strong>Certificado de destino</strong>
+                      <span>{% if s.certificado_destino %}Abrir archivo{% else %}No adjunto{% endif %}</span>
+                    </div>
+                  </a>
+                </div>
+                <div class="document-docket-footnote">
+                  {% if s.documentacion_faltante %}
+                  <span><i class="fa-solid fa-triangle-exclamation"></i> Faltantes: {{ s.documentacion_faltante|join(', ') }}</span>
+                  {% else %}
+                  <span><i class="fa-solid fa-circle-check"></i> Legajo documental completo.</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="document-docket-trace">
+              <div class="document-docket-panel-title"><i class="fa-solid fa-route"></i> Trazabilidad del servicio</div>
+              <div class="document-trace-list">
+                {% for item in s.timeline_items %}
+                <div class="document-trace-item">
+                  <div class="document-trace-dot"></div>
+                  <div>
+                    <strong>{{ item.evento.replace('_', ' ')|capitalize }}</strong>
+                    <span>{{ item.detalle or 'Sin detalle adicional' }}</span>
+                  </div>
+                  <time>{{ item.creado.strftime('%d/%m/%Y %H:%M') }}</time>
+                </div>
+                {% else %}
+                <div class="document-trace-empty">Sin eventos registrados para este servicio.</div>
+                {% endfor %}
+              </div>
+            </div>
+          </details>
+        </article>
+        {% else %}
+        <div class="empty-state-card">
+          <i class="fa-regular fa-folder-open"></i>
+          <h3>No hay documentos para mostrar</h3>
+          <p>Cuando completes servicios o cambies el filtro, los comprobantes y la trazabilidad apareceran aca.</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

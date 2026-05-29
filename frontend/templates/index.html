@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Residuos 360 | Cumplimiento y trazabilidad{% endblock %}
+
+{% block content %}
+<div class="home-page">
+  <section class="hero-home">
+    <div class="container hero-grid hero-grid-compact">
+      <div class="hero-copy fade-up">
+        <span class="eyebrow">
+          <i class="fa-solid fa-shield-halved"></i>
+          Plataforma operativa para Uruguay
+        </span>
+        <h1 class="hero-title">Retiros empresariales con trazabilidad y respaldo real.</h1>
+        <p>Coordiná solicitudes, operadores y cierre documental en un flujo más claro para empresa, transportista y administración.</p>
+
+        <div class="hero-points">
+          <div class="hero-point">
+            <i class="fa-solid fa-route"></i>
+            <span>Seguimiento de punta a punta</span>
+          </div>
+          <div class="hero-point">
+            <i class="fa-solid fa-file-shield"></i>
+            <span>Respaldo documental por retiro</span>
+          </div>
+          <div class="hero-point">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Operadores visibles y verificables</span>
+          </div>
+        </div>
+
+        <div class="hero-mini-stats">
+          <div>
+            <strong>1 flujo</strong>
+            <span>solicitar, aceptar y cerrar</span>
+          </div>
+          <div>
+            <strong>3 roles</strong>
+            <span>empresa, operador y admin</span>
+          </div>
+          <div>
+            <strong>+ control</strong>
+            <span>peso, destino y evidencia</span>
+          </div>
+        </div>
+
+        <div class="cta-row">
+          <a href="{{ url_for('solicitar') }}" class="btn">Solicitar retiro</a>
+          <a href="{{ url_for('gestores') }}" class="btn-ghost">Ver operadores</a>
+        </div>
+      </div>
+
+      <aside class="hero-stack fade-up">
+        <article class="hero-panel hero-panel-main">
+          <div class="panel-badge">
+            <i class="fa-solid fa-sparkles"></i>
+            Qué mejora
+          </div>
+          <div class="hero-feature-list">
+            <div class="hero-feature-item">
+              <i class="fa-brands fa-whatsapp"></i>
+              <div>
+                <strong>Menos coordinación informal</strong>
+                <p>Menos mensajes sueltos, llamadas y planillas dispersas.</p>
+              </div>
+            </div>
+            <div class="hero-feature-item">
+              <i class="fa-solid fa-weight-scale"></i>
+              <div>
+                <strong>Más control operativo</strong>
+                <p>Sabés quién retira, cuánto pesa y qué documentación queda cargada.</p>
+              </div>
+            </div>
+            <div class="hero-feature-item">
+              <i class="fa-solid fa-folder-open"></i>
+              <div>
+                <strong>Más orden para auditoría</strong>
+                <p>Cada servicio termina con un historial más claro y defendible.</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="hero-panel hero-panel-inline">
+          <div class="hero-inline-stat">
+            <i class="fa-solid fa-building"></i>
+            <div>
+              <strong>Para empresas</strong>
+              <span>Pedís el retiro y seguís el estado sin perseguir información.</span>
+            </div>
+          </div>
+          <div class="hero-inline-stat">
+            <i class="fa-solid fa-truck-fast"></i>
+            <div>
+              <strong>Para operadores</strong>
+              <span>Recibís viajes claros y cerrás con peso, destino y respaldo.</span>
+            </div>
+          </div>
+        </article>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section-space">
+    <div class="container">
+      <div class="stats-grid fade-up">
+        <article class="stat-card compact-stat">
+          <i class="fa-solid fa-network-wired"></i>
+          <strong>Red operativa</strong>
+          <p>Marketplace con operadores publicados, datos visibles y capacidad operativa más clara.</p>
+        </article>
+        <article class="stat-card compact-stat">
+          <i class="fa-solid fa-route"></i>
+          <strong>Operación trazable</strong>
+          <p>Solicitud, aceptación, retiro, peso real y destino final dentro del mismo circuito.</p>
+        </article>
+        <article class="stat-card compact-stat">
+          <i class="fa-solid fa-file-circle-check"></i>
+          <strong>Respaldo serio</strong>
+          <p>Comprobantes, certificados y alertas para sostener mejor el cumplimiento.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-space">
+    <div class="container split-grid">
+      <article class="section-card fade-up">
+        <h2>Para empresas</h2>
+        <p class="section-lead">El flujo tiene que ser simple, rápido y más defendible.</p>
+        <ul class="value-list icon-list">
+          <li><i class="fa-solid fa-layer-group"></i><span>Solicitud guiada por categoría y requisitos documentales.</span></li>
+          <li><i class="fa-solid fa-clock-rotate-left"></i><span>Seguimiento del retiro y del próximo paso sin fricción operativa.</span></li>
+          <li><i class="fa-solid fa-file-invoice"></i><span>Historial con respaldo para control interno y auditoría.</span></li>
+        </ul>
+      </article>
+
+      <article class="section-card fade-up">
+        <h2>Para operadores</h2>
+        <p class="section-lead">La plataforma también tiene que ayudar a trabajar mejor y mostrar formalidad.</p>
+        <ul class="value-list icon-list">
+          <li><i class="fa-solid fa-map-location-dot"></i><span>Perfil visible con zona, categorías y estado de validación.</span></li>
+          <li><i class="fa-solid fa-clipboard-list"></i><span>Solicitudes claras con peso estimado, observaciones y tipo de residuo.</span></li>
+          <li><i class="fa-solid fa-camera-retro"></i><span>Cierre con peso real, destino final y evidencia cuando corresponde.</span></li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="section-space">
+    <div class="container">
+      <article class="muted-band fade-up compact-band">
+        <div>
+          <h2>Una operación más ordenada antes de hacerla más grande.</h2>
+          <p>El diferencial no está solo en encontrar un camión. Está en coordinar bien, dejar evidencia y sostener el servicio con mejor criterio operativo.</p>
+        </div>
+        <div class="cta-row">
+          <a href="{{ url_for('register', role='empresa') }}" class="btn">Crear cuenta empresa</a>
+          <a href="{{ url_for('register', role='gestor') }}" class="btn-ghost">Publicar operador</a>
+        </div>
+      </article>
+    </div>
+  </section>
+</div>
+{% endblock %}

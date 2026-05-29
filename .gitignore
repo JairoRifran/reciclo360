@@ -1,0 +1,33 @@
+# Entorno local
+.env
+.venv/
+venv/
+backend/venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Bases y datos locales
+*.db
+instance/
+backend/instance/
+
+# Archivos subidos/documentos sensibles
+frontend/static/uploads/
+
+# Logs y procesos locales
+*.log
+server.out.log
+server.err.log
+
+# Deploy local
+.vercel/
+
+# Sistema/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

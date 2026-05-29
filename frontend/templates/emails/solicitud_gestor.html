@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nueva solicitud asignada</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #24323b;">
+  <h1 style="background:#27ae60; color:white; padding:16px;">Residuos 360</h1>
+  <div style="padding:16px;">
+    <p>Hola {{ solicitud.gestor_user.nombre_visible }},</p>
+    <p>Recibiste una nueva solicitud de retiro.</p>
+    <ul>
+      <li><strong>ID:</strong> #{{ solicitud.id }}</li>
+      <li><strong>Empresa:</strong> {{ solicitud.empresa }}</li>
+      <li><strong>Tipo:</strong> {{ solicitud.tipo }}</li>
+      <li><strong>Peso estimado:</strong> {{ '%.2f'|format(solicitud.peso_estimado) }} kg</li>
+      <li><strong>Zona:</strong> {{ solicitud.ubicacion }}</li>
+      <li><strong>Fecha:</strong> {{ solicitud.fecha_label }}</li>
+    </ul>
+    <p>
+      Ingresá a tu panel para aceptarla o rechazarla:
+      <a href="{{ url_for('dashboard', _external=True) }}">Abrir panel</a>
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}Panel Admin | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <p>{{ current_user.email }}</p>
+        <h1>Panel administrativo</h1>
+      </div>
+
+      <section class="dashboard-intro-card surface-card">
+        <div class="dashboard-intro-copy">
+          <span class="dashboard-kicker"><i class="fa-solid fa-compass"></i> Que hacer ahora</span>
+          <h2>Supervisa actividad, sincroniza operadores oficiales y activa cuentas para operar.</h2>
+          <p>Tu panel centraliza altas, verificacion oficial, seguimiento de solicitudes y control general de la red.</p>
+        </div>
+        <div class="dashboard-guide-grid">
+          <div class="dashboard-guide-item">
+            <i class="fa-solid fa-rotate"></i>
+            <strong>Sincronizar</strong>
+            <span>Actualiza el listado oficial del Ministerio.</span>
+          </div>
+          <div class="dashboard-guide-item">
+            <i class="fa-solid fa-user-plus"></i>
+            <strong>Activar operadores</strong>
+            <span>Completa email, zonas y tarifas para publicarlos.</span>
+          </div>
+          <div class="dashboard-guide-item">
+            <i class="fa-solid fa-chart-line"></i>
+            <strong>Supervisar</strong>
+            <span>Controla solicitudes, empresas y actividad reciente.</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="info-box process-box">
+        <strong>Operacion sugerida</strong>
+        <p>1. Sincronizas el listado oficial. 2. Precargas operadores. 3. Los activas con email, clave temporal, zona y tarifa para que puedan operar.</p>
+      </div>
+
+      <div id="sync" class="sync-card">
+        <div>
+          <strong>Verificacion automatica con Ministerio de Ambiente</strong>
+          <p>
+            Ultima sincronizacion:
+            {{ ministerio_sync.synced_at[:16].replace('T', ' ') if ministerio_sync.synced_at else 'Sin snapshot todavia' }}
+          </p>
+          <p>Operadores verificados en el ultimo proceso: {{ ministerio_sync.matched }} / {{ ministerio_sync.total }}</p>
+          <p>Registros leidos del listado oficial: {{ ministerio_sync.record_count }}</p>
+          <p><a href="{{ ministerio_sync.source_url }}" target="_blank">Abrir fuente oficial</a></p>
+        </div>
+        <form action="{{ url_for('admin_sync_ministerio') }}" method="post">
+          <button type="submit" class="btn btn-primary">Resincronizar ahora</button>
+        </form>
+      </div>
+
+      <div class="metrics">
+        <div class="metric-card"><div><div class="value">{{ nuevas_24h }}</div><div class="label">Solicitudes en 24h</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ solicitudes|length }}</div><div class="label">Solicitudes totales</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ total_empresas }}</div><div class="label">Empresas</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ total_gestores }}</div><div class="label">Transportistas</div></div></div>
+      </div>
+
+      <h2 id="suggestions">Sugerencias desde el listado oficial</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Razon social</th>
+              <th>Nombre comercial</th>
+              <th>RUT</th>
+              <th>Modalidad</th>
+              <th>Estado</th>
+              <th>Categorias</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in ministerio_suggestions %}
+            <tr>
+              <td>{{ item.razon_social }}</td>
+              <td>{{ item.nombre_comercial }}</td>
+              <td>{{ item.rut or '-' }}</td>
+              <td>{{ item.modalidad or '-' }}</td>
+              <td>{{ item.estado_habilitacion or '-' }}</td>
+              <td>{{ item.categorias or '-' }}</td>
+              <td>
+                <form action="{{ url_for('admin_importar_ministerio') }}" method="post">
+                  <input type="hidden" name="razon_social" value="{{ item.razon_social }}">
+                  <input type="hidden" name="nombre_comercial" value="{{ item.nombre_comercial }}">
+                  <input type="hidden" name="rut" value="{{ item.rut or '' }}">
+                  <input type="hidden" name="modalidad" value="{{ item.modalidad or '' }}">
+                  <input type="hidden" name="estado_habilitacion" value="{{ item.estado_habilitacion or '' }}">
+                  <input type="hidden" name="categorias" value="{{ item.categorias or '' }}">
+                  <button type="submit" class="btn small-btn">Precargar</button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center">No hay nuevas sugerencias disponibles en el snapshot actual.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="requests">Solicitudes</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Empresa</th>
+              <th>Transportista</th>
+              <th>Residuo</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Destino</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in solicitudes %}
+            <tr>
+              <td>#{{ s.id }}</td>
+              <td>{{ s.empresa }}</td>
+              <td>{{ s.gestor_nombre }}</td>
+              <td>{{ s.tipo }}</td>
+              <td>{{ s.fecha_label }}</td>
+              <td>{{ s.estado|capitalize }}</td>
+              <td>{{ s.destino_final or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center">No hay solicitudes registradas.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="companies">Empresas</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Empresa</th>
+              <th>Ubicacion</th>
+              <th>Plan</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in empresas %}
+            <tr>
+              <td>{{ u.email }}</td>
+              <td>{{ u.nombre_visible }}</td>
+              <td>{{ u.ubicacion or '-' }}</td>
+              <td>{{ u.plan.name if u.plan else 'Sin plan' }}</td>
+              <td>{{ 'Activo' if u.is_active else 'Suspendido' }}</td>
+              <td>
+                <div class="action-group">
+                  <form action="{{ url_for('admin_usuario_action', uid=u.id, action='suspender' if u.is_active else 'reactivar') }}" method="post">
+                    <button type="submit" class="btn small-btn {{ 'secondary-btn' if u.is_active else '' }}">
+                      {{ 'Suspender' if u.is_active else 'Reactivar' }}
+                    </button>
+                  </form>
+                  <form action="{{ url_for('admin_change_plan') }}" method="post" class="inline-form">
+                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                    <select name="plan_id">
+                      {% for p in planes_admin %}
+                      <option value="{{ p.id }}" {% if u.plan and u.plan.id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn small-btn">Guardar plan</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="6" class="text-center">No hay empresas registradas.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="operators">Transportistas</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Zona</th>
+              <th>RUT / habilitacion</th>
+              <th>Modalidad</th>
+              <th>Estado oficial</th>
+              <th>Categorias</th>
+              <th>Categorias operativas</th>
+              <th>Ministerio</th>
+              <th>Ultima sync</th>
+              <th>Tarifa</th>
+              <th>Estado</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in gestores %}
+            <tr>
+              <td>{{ u.email }}</td>
+              <td>{{ u.nombre_visible }}</td>
+              <td>{{ u.ubicacion or '-' }}</td>
+              <td>{{ u.ministerio_rut or u.numero_habilitacion or 'No informada' }}</td>
+              <td>{{ u.ministerio_modalidad or '-' }}</td>
+              <td>{{ u.ministerio_estado or '-' }}</td>
+              <td>{{ u.ministerio_categorias or '-' }}</td>
+              <td>{{ u.categorias_residuo or '-' }}</td>
+              <td>{{ 'Verificado' if u.verificado_ministerio else 'No verificado' }}</td>
+              <td>{{ u.verificacion_actualizada_en.strftime('%d/%m/%Y %H:%M') if u.verificacion_actualizada_en else 'Sin sincronizar' }}</td>
+              <td>UYU {{ '%.2f'|format(u.tarifa_base_retiro_uyu or 0) }} base · UYU {{ '%.2f'|format(u.tarifa_por_kg) }}/kg</td>
+              <td>{{ 'Activo' if u.is_active else 'Pendiente de activacion' }}</td>
+              <td>
+                {% if u.is_active %}
+                <form action="{{ url_for('admin_usuario_action', uid=u.id, action='suspender' if u.is_active else 'reactivar') }}" method="post">
+                  <button type="submit" class="btn small-btn secondary-btn">Suspender</button>
+                </form>
+                {% else %}
+                <form action="{{ url_for('admin_activar_gestor', uid=u.id) }}" method="post" class="stack-form compact-form">
+                  <input type="email" name="email" value="{{ '' if 'ministerio-pendiente.local' in u.email else u.email }}" placeholder="Email real" required>
+                  <input type="text" name="razon_social" value="{{ u.razon_social or u.empresa or '' }}" placeholder="Razon social">
+                  <input type="text" name="rut" value="{{ u.rut or u.ministerio_rut or '' }}" placeholder="RUT">
+                  <input type="text" name="ubicacion" value="{{ '' if u.ubicacion == 'Pendiente de validar' else (u.ubicacion or '') }}" placeholder="Zona de cobertura" required>
+                  <input type="text" name="domicilio_fiscal" value="{{ u.domicilio_fiscal or '' }}" placeholder="Domicilio fiscal">
+                  <input type="text" name="telefono" value="{{ u.telefono or '' }}" placeholder="Telefono">
+                  <input type="text" name="zonas_cobertura" value="{{ u.zonas_cobertura or '' }}" placeholder="Zonas de cobertura">
+                  <input type="number" step="1" min="0" name="radio_cobertura_km" value="{{ '%.0f'|format(u.radio_cobertura_km or 25) }}" placeholder="Radio km">
+                  <input type="text" name="giro" value="{{ u.giro or '' }}" placeholder="Giro">
+                  <input type="text" name="condicion_tributaria" value="{{ u.condicion_tributaria or '' }}" placeholder="Condicion tributaria">
+                  <input type="text" name="contacto_facturacion" value="{{ u.contacto_facturacion or '' }}" placeholder="Contacto de facturacion">
+                  <input type="email" name="email_facturacion" value="{{ u.email_facturacion or '' }}" placeholder="Email de facturacion">
+                  <input type="number" step="0.01" min="0" name="tarifa_base_retiro_uyu" value="{{ '%.2f'|format(u.tarifa_base_retiro_uyu or 0) }}" placeholder="Base retiro UYU" required>
+                  <input type="number" step="0.01" min="0" name="tarifa_por_kg" value="{{ '%.2f'|format(u.tarifa_por_kg or 0) }}" placeholder="Tarifa por kg" required>
+                  <input type="number" step="0.01" min="0" name="tarifa_km_uyu" value="{{ '%.2f'|format(u.tarifa_km_uyu or 0) }}" placeholder="Tarifa por km UYU" required>
+                  <input type="number" step="0.01" min="0" name="tarifa_m3_uyu" value="{{ '%.2f'|format(u.tarifa_m3_uyu or 0) }}" placeholder="Tarifa por m3 UYU" required>
+                  <input type="number" step="0.01" min="0" name="tarifa_tratamiento_kg_uyu" value="{{ '%.2f'|format(u.tarifa_tratamiento_kg_uyu or 0) }}" placeholder="Tratamiento por kg UYU">
+                  <input type="number" step="0.01" min="0" name="costo_certificado_uyu" value="{{ '%.2f'|format(u.costo_certificado_uyu or 0) }}" placeholder="Costo certificado UYU">
+                  <input type="text" name="notas_operativas" value="{{ u.notas_operativas or '' }}" placeholder="Notas operativas">
+                  <div class="category-groups compact-categories">
+                    {% for group in residue_groups %}
+                    <div class="category-family">
+                      <strong>{{ group.label }}</strong>
+                      <div class="category-checklist">
+                        {% for item in group["items"] %}
+                        <label class="category-item">
+                          <input type="checkbox" name="categorias_residuo" value="{{ item.key }}">
+                          <span>
+                            <b>{{ item.label }}</b>
+                            <small>{{ item.description }}</small>
+                          </span>
+                        </label>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <input type="text" name="password" placeholder="Clave temporal" required>
+                  <button type="submit" class="btn small-btn">Activar cuenta</button>
+                </form>
+                {% endif %}
+                {% if u.is_active %}
+                <form action="{{ url_for('admin_gestor_categorias', uid=u.id) }}" method="post" class="stack-form compact-form category-admin-form">
+                  <div class="category-groups compact-categories">
+                    {% set selected_categories = (u.categorias_residuo or '').split(',') %}
+                    {% for group in residue_groups %}
+                    <div class="category-family">
+                      <strong>{{ group.label }}</strong>
+                      <div class="category-checklist">
+                        {% for item in group["items"] %}
+                        <label class="category-item">
+                          <input type="checkbox" name="categorias_residuo" value="{{ item.key }}" {% if item.key in selected_categories %}checked{% endif %}>
+                          <span>
+                            <b>{{ item.label }}</b>
+                            <small>{{ item.description }}</small>
+                          </span>
+                        </label>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                  <button type="submit" class="btn small-btn">Guardar categorias</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="13" class="text-center">No hay transportistas registrados.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

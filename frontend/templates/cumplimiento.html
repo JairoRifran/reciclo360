@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Cumplimiento | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <p>{{ current_user.email }}</p>
+        <h1>Panel de cumplimiento</h1>
+      </div>
+
+      <div class="metrics">
+        <div class="metric-card"><div><div class="value">{{ compliance_summary.documented_completed }}</div><div class="label">Completados con respaldo</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ compliance_summary.total_completed }}</div><div class="label">Servicios completados</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ compliance_summary.documentation_rate }}%</div><div class="label">Cobertura documental</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ compliance_summary.pending_documents }}</div><div class="label">Completados con faltantes</div></div></div>
+      </div>
+
+      <form method="get" class="filter-grid">
+        <select name="estado">
+          <option value="">Todos los estados</option>
+          <option value="pendiente" {% if selected_estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+          <option value="aceptada" {% if selected_estado == 'aceptada' %}selected{% endif %}>Aceptada</option>
+          <option value="retirada" {% if selected_estado == 'retirada' %}selected{% endif %}>Retirada</option>
+          <option value="completada" {% if selected_estado == 'completada' %}selected{% endif %}>Completada</option>
+          <option value="rechazada" {% if selected_estado == 'rechazada' %}selected{% endif %}>Rechazada</option>
+        </select>
+        <select name="tipo">
+          <option value="">Todos los tipos</option>
+          {% for tipo in available_tipos %}
+          <option value="{{ tipo }}" {% if selected_tipo == tipo %}selected{% endif %}>{{ tipo }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{{ url_for('cumplimiento') }}" class="btn secondary-btn">Limpiar</a>
+      </form>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Residuo</th>
+              <th>Operador</th>
+              <th>Estado</th>
+              <th>Destino</th>
+              <th>Peso final</th>
+              <th>Documentos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in solicitudes %}
+            <tr>
+              <td>#{{ s.id }}</td>
+              <td>{{ s.tipo }}</td>
+              <td>{{ s.gestor_nombre }}</td>
+              <td><span class="status-chip status-{{ s.estado }}">{{ s.estado|capitalize }}</span></td>
+              <td>{{ s.destino_final or '-' }}</td>
+              <td>{{ '%.2f'|format(s.peso_real or s.peso_estimado) }} kg</td>
+              <td>
+                <div class="doc-links">
+                  {% if s.comprobante_peso %}<a href="{{ s.comprobante_peso }}" target="_blank">Peso</a>{% endif %}
+                  {% if s.evidencia_retiro %}<a href="{{ s.evidencia_retiro }}" target="_blank">Retiro</a>{% endif %}
+                  {% if s.certificado_destino %}<a href="{{ s.certificado_destino }}" target="_blank">Destino</a>{% endif %}
+                  {% if not s.comprobante_peso and not s.evidencia_retiro and not s.certificado_destino %}<span class="muted-label">Sin adjuntos</span>{% endif %}
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center">No hay solicitudes para ese filtro.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

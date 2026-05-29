@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Mi Plan | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="panel-card">
+      <div class="panel-head inline-head">
+        <div>
+          <h2>Mi plan</h2>
+          <p>Elegi el esquema comercial que mejor te sirva para operar tus retiros.</p>
+        </div>
+        <p class="current-plan-line">Plan actual: <strong>{{ current.name if current else 'Sin plan' }}</strong></p>
+      </div>
+
+      <form method="post">
+        <div class="plan-grid-horizontal">
+          {% for p in planes %}
+          <label class="plan-card plan-card-horizontal selectable-plan {% if current and current.id == p.id %}plan-card-active{% endif %} {% if p.name == 'Pro' %}plan-tier-pro{% elif p.name == 'Starter' %}plan-tier-starter{% else %}plan-tier-usage{% endif %}">
+            <input type="radio" name="plan_id" value="{{ p.id }}" {% if current and current.id == p.id %}checked{% endif %}>
+
+            <div class="plan-card-top">
+              <div>
+                <span class="plan-kicker">{% if current and current.id == p.id %}Plan actual{% else %}Disponible{% endif %}</span>
+                <h3>{{ p.name }}</h3>
+              </div>
+              {% if p.name == 'Pro' %}
+              <span class="status-chip status-chip-success">Escalable</span>
+              {% elif p.name == 'Starter' %}
+              <span class="status-chip status-chip-warning">Balanceado</span>
+              {% else %}
+              <span class="status-chip status-chip-neutral">Flexible</span>
+              {% endif %}
+            </div>
+
+            <div class="plan-price-block">
+              <strong class="plan-price">
+                {% if p.price_uyu %}
+                $ {{ p.price_uyu }} UYU / mes
+                {% else %}
+                Sin mensualidad
+                {% endif %}
+              </strong>
+              <span class="plan-price-note">
+                {% if p.limit_requests %}
+                Hasta {{ p.limit_requests }} solicitudes mensuales
+                {% else %}
+                Solicitudes sin tope mensual
+                {% endif %}
+              </span>
+            </div>
+
+            <div class="plan-feature-list">
+              <div class="plan-feature-item">
+                <i class="fa-solid fa-route"></i>
+                <span>
+                  {% if p.name == 'Pago por Uso' %}
+                  Ideal para empezar sin costo fijo mensual y pagar solo por actividad.
+                  {% elif p.name == 'Starter' %}
+                  Pensado para empresas con operativa estable y volumen mensual moderado.
+                  {% else %}
+                  Mejor opcion para equipos con retiros frecuentes y necesidad de escala.
+                  {% endif %}
+                </span>
+              </div>
+              <div class="plan-feature-item">
+                <i class="fa-solid fa-percent"></i>
+                <span>Comision: {{ (p.commission_rate * 100)|round(1) }}%</span>
+              </div>
+              <div class="plan-feature-item">
+                <i class="fa-regular fa-folder-open"></i>
+                <span>Acceso al mismo circuito operativo, documental y de trazabilidad.</span>
+              </div>
+              <div class="plan-feature-item">
+                <i class="fa-regular fa-circle-check"></i>
+                <span>
+                  {% if p.name == 'Pago por Uso' %}
+                  Sin compromiso mensual, con total flexibilidad para validar el servicio.
+                  {% elif p.name == 'Starter' %}
+                  Mejor equilibrio entre costo fijo, comision y control del flujo operativo.
+                  {% else %}
+                  Menor comision por retiro y mayor conveniencia para crecimiento sostenido.
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+
+            <div class="plan-card-footer">
+              <span class="plan-selection-copy">
+                {% if current and current.id == p.id %}
+                Este esquema ya esta activo en tu cuenta.
+                {% else %}
+                Seleccionalo para actualizar tu esquema comercial.
+                {% endif %}
+              </span>
+              <span class="plan-selection-indicator">
+                {% if current and current.id == p.id %}
+                Seleccionado
+                {% else %}
+                Elegir plan
+                {% endif %}
+              </span>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+
+        <div class="dashboard-actions">
+          <button type="submit" class="btn btn-primary">Guardar plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

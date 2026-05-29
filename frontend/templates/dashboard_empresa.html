@@ -1,0 +1,703 @@
+{% extends "base.html" %}
+{% block title %}Panel Empresa | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <p>{{ current_user.email }}</p>
+        <h1>{{ current_user.nombre_visible }}</h1>
+        <div class="verification-banner">
+          <strong>Valoracion de la empresa</strong>
+          <span>
+            {% if company_rating_average %}
+            {{ company_rating_average }}/5 estrellas · {{ company_rating_count }} valoracion(es)
+            {% else %}
+            Sin valoraciones todavia
+            {% endif %}
+          </span>
+          {% if company_rating_average %}
+          <div class="rating-stars" aria-label="Promedio {{ company_rating_average }} de 5">
+            {% set avg_rating = company_rating_average|round(0, 'common')|int %}
+            {% for star in range(1, 6) %}
+            <span class="rating-star {% if star <= avg_rating %}is-filled{% endif %}">★</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <section class="dashboard-intro-card surface-card">
+        <div class="dashboard-intro-copy">
+          <span class="dashboard-kicker"><i class="fa-solid fa-compass"></i> Que hacer ahora</span>
+          <h2>Gestiona retiros, revisa alertas y controla cumplimiento desde un solo lugar.</h2>
+          <p>Empieza creando una solicitud nueva, sigue el estado del operador y revisa respaldo documental cuando el servicio se cierre.</p>
+        </div>
+        <div class="dashboard-guide-grid">
+          <a href="{{ url_for('solicitar') }}" class="dashboard-guide-item dashboard-guide-link">
+            <i class="fa-solid fa-plus"></i>
+            <div>
+              <strong>Crear retiro</strong>
+              <span>Inicia una nueva gestion con direccion, residuo y operador.</span>
+            </div>
+          </a>
+          <a href="{{ url_for('dashboard', estado='aceptada') }}" class="dashboard-guide-item dashboard-guide-link">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <div>
+              <strong>Seguir estado</strong>
+              <span>Ve si esta pendiente, aceptado, completado o rechazado.</span>
+            </div>
+          </a>
+          <a href="{{ url_for('documentos') }}" class="dashboard-guide-item dashboard-guide-link">
+            <i class="fa-solid fa-folder-tree"></i>
+            <div>
+              <strong>Revisar respaldo</strong>
+              <span>Accede a peso, evidencia y certificados cuando existan.</span>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      {% if company_rating_count %}
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Distribucion de valoraciones</h2>
+            <p>Como vienen puntuando tu operacion los operadores.</p>
+          </div>
+        </div>
+        <div class="rating-distribution">
+          {% for item in company_rating_distribution %}
+          <div class="rating-distribution-row">
+            <div class="rating-distribution-label">{{ item.stars }}★</div>
+            <div class="rating-distribution-bar">
+              <span style="width: {{ item.bar_pct }}%"></span>
+            </div>
+            <div class="rating-distribution-meta">{{ item.count }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <div class="metrics company-summary-grid">
+        <a href="{{ url_for('dashboard') }}" class="metric-card institutional-metric-card metric-ecosystem metric-link company-metric-link {% if not selected_estado %}metric-active{% endif %}">
+          <div><div class="value">{{ total }}</div><div class="label">Totales</div><div class="metric-note">Todos los retiros registrados</div></div>
+        </a>
+        <a href="{{ url_for('dashboard', estado='pendiente') }}" class="metric-card institutional-metric-card metric-alert metric-link company-metric-link {% if selected_estado == 'pendiente' %}metric-active{% endif %}">
+          <div><div class="value">{{ pend }}</div><div class="label">Pendientes</div><div class="metric-note">Esperando respuesta del operador</div></div>
+        </a>
+        <a href="{{ url_for('dashboard', estado='aceptada') }}" class="metric-card institutional-metric-card metric-operations metric-link company-metric-link {% if selected_estado == 'aceptada' %}metric-active{% endif %}">
+          <div><div class="value">{{ acept }}</div><div class="label">En curso</div><div class="metric-note">Retiros aceptados o activos</div></div>
+        </a>
+        <a href="{{ url_for('dashboard', estado='retirada') }}" class="metric-card institutional-metric-card metric-docs metric-link company-metric-link {% if selected_estado == 'retirada' %}metric-active{% endif %}">
+          <div><div class="value">{{ reti }}</div><div class="label">Retiradas</div><div class="metric-note">Falta cierre y respaldo final</div></div>
+        </a>
+        <a href="{{ url_for('dashboard', estado='completada') }}" class="metric-card institutional-metric-card metric-contracts metric-link company-metric-link {% if selected_estado == 'completada' %}metric-active{% endif %}">
+          <div><div class="value">{{ comp }}</div><div class="label">Completadas</div><div class="metric-note">Servicios cerrados correctamente</div></div>
+        </a>
+        <a href="{{ url_for('dashboard', estado='rechazada') }}" class="metric-card institutional-metric-card metric-timing metric-link company-metric-link {% if selected_estado == 'rechazada' %}metric-active{% endif %}">
+          <div><div class="value">{{ rech }}</div><div class="label">Rechazadas</div><div class="metric-note">Solicitudes no tomadas por operador</div></div>
+        </a>
+      </div>
+
+      <div class="dashboard-actions dashboard-actions-tight">
+        <a href="{{ url_for('solicitar') }}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Nueva solicitud</a>
+        <a href="{{ url_for('contratos') }}" class="btn secondary-btn"><i class="fa-solid fa-file-signature"></i> Contratos</a>
+        <a href="{{ url_for('cumplimiento') }}" class="btn secondary-btn"><i class="fa-solid fa-shield-halved"></i> Cumplimiento</a>
+        <a href="{{ url_for('declaraciones') }}" class="btn secondary-btn"><i class="fa-regular fa-file-lines"></i> Declaraciones</a>
+        <a href="{{ url_for('documentos') }}" class="btn secondary-btn"><i class="fa-regular fa-folder-open"></i> Centro documental</a>
+        <a href="{{ url_for('reportes') }}" class="btn secondary-btn"><i class="fa-solid fa-chart-column"></i> Reportes</a>
+        <a href="{{ url_for('mi_plan') }}" class="btn secondary-btn"><i class="fa-regular fa-credit-card"></i> Mi plan</a>
+      </div>
+
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Marco legal por transportista</h2>
+            <p>Controla cuántos vínculos están vigentes antes de coordinar retiros aptos para declaración.</p>
+          </div>
+          <a href="{{ url_for('contratos') }}" class="btn secondary-btn">Ver contratos</a>
+        </div>
+        <div class="status-overview-list status-overview-columns">
+          <div class="status-overview-item">
+            <strong>Vigentes</strong>
+            <span>{{ contract_summary.vigentes }}</span>
+          </div>
+          <div class="status-overview-item">
+            <strong>Pendientes</strong>
+            <span>{{ contract_summary.pendientes }}</span>
+          </div>
+          <div class="status-overview-item">
+            <strong>Por vencer / vencidos</strong>
+            <span>{{ contract_summary.vencidos }}</span>
+          </div>
+          <div class="status-overview-item">
+            <strong>Total de vínculos</strong>
+            <span>{{ contract_summary.total }}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Declaraciones regulatorias</h2>
+            <p>Prepara IMM y Ministerio con datos conciliados, firmante y respaldo documental.</p>
+          </div>
+          <a href="{{ url_for('declaraciones') }}" class="btn secondary-btn">Abrir modulo</a>
+        </div>
+        <div class="status-overview-list status-overview-columns">
+          <div class="status-overview-item">
+            <strong>Listas para presentar</strong>
+            <span>{{ declaration_summary.ready }}</span>
+          </div>
+          <div class="status-overview-item">
+            <strong>Presentadas</strong>
+            <span>{{ declaration_summary.presented }}</span>
+          </div>
+          <div class="status-overview-item">
+            <strong>Pendientes</strong>
+            <span>{{ declaration_summary.pending }}</span>
+          </div>
+          <div class="status-overview-item">
+            <strong>Conciliadas</strong>
+            <span>{{ declaration_summary.reconciled }}</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="dashboard-toolbar">
+        <div class="dashboard-filter-pills">
+          <a href="{{ url_for('dashboard') }}" class="filter-pill {% if not selected_estado %}filter-pill-active{% endif %}">Todo</a>
+          <a href="{{ url_for('dashboard', estado='pendiente') }}" class="filter-pill {% if selected_estado == 'pendiente' %}filter-pill-active{% endif %}">Pendientes</a>
+          <a href="{{ url_for('dashboard', estado='aceptada') }}" class="filter-pill {% if selected_estado == 'aceptada' %}filter-pill-active{% endif %}">Aceptadas</a>
+          <a href="{{ url_for('dashboard', estado='retirada') }}" class="filter-pill {% if selected_estado == 'retirada' %}filter-pill-active{% endif %}">Retiradas</a>
+          <a href="{{ url_for('dashboard', estado='completada') }}" class="filter-pill {% if selected_estado == 'completada' %}filter-pill-active{% endif %}">Completadas</a>
+          <a href="{{ url_for('dashboard', estado='rechazada') }}" class="filter-pill {% if selected_estado == 'rechazada' %}filter-pill-active{% endif %}">Rechazadas</a>
+        </div>
+        <p class="dashboard-toolbar-copy">Entrá por estado para ver rápido qué requiere seguimiento.</p>
+      </div>
+
+      <details id="perfil" class="accordion-card">
+        <summary>
+          <div>
+            <strong>Perfil de empresa</strong>
+            <span>{{ current_user.contacto_nombre or current_user.nombre_visible }} · {{ current_user.ubicacion or 'Zona sin definir' }} · Completitud fiscal {{ company_fiscal_completion }}%</span>
+          </div>
+          <span class="accordion-icon">+</span>
+        </summary>
+
+        <form action="{{ url_for('empresa_perfil') }}" method="post" class="stack-form accordion-form">
+          <div class="grid-2">
+            <label>
+              Empresa
+              <input type="text" name="empresa" value="{{ current_user.empresa or '' }}" required>
+            </label>
+            <label>
+              Contacto operativo
+              <input type="text" name="contacto_nombre" value="{{ current_user.contacto_nombre or '' }}" placeholder="Ej. Paula Rodriguez">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Correo de acceso
+              <input type="email" name="email" value="{{ current_user.email }}" required>
+            </label>
+            <label>
+              Telefono
+              <input type="text" name="telefono" value="{{ current_user.telefono or '' }}" placeholder="Ej. 099 123 456">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Zona principal
+              <input type="text" name="ubicacion" value="{{ current_user.ubicacion or '' }}" placeholder="Ej. Montevideo" required>
+            </label>
+            <label>
+              Direccion base
+              <input type="text" name="direccion_base" value="{{ current_user.direccion_base or '' }}" placeholder="Ej. Ruta 5 km 12, nave 3">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Razon social
+              <input type="text" name="razon_social" value="{{ current_user.razon_social or current_user.empresa or '' }}" placeholder="Ej. Verdes SRL">
+            </label>
+            <label>
+              RUT
+              <input type="text" name="rut" value="{{ current_user.rut or '' }}" placeholder="Ej. 219999990012">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Giro
+              <input type="text" name="giro" value="{{ current_user.giro or '' }}" placeholder="Ej. Comercio e industria">
+            </label>
+            <label>
+              Condicion tributaria
+              <input type="text" name="condicion_tributaria" value="{{ current_user.condicion_tributaria or '' }}" placeholder="Ej. Contribuyente IVA">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Domicilio fiscal
+              <input type="text" name="domicilio_fiscal" value="{{ current_user.domicilio_fiscal or '' }}" placeholder="Direccion fiscal">
+            </label>
+            <label>
+              Contacto de facturacion
+              <input type="text" name="contacto_facturacion" value="{{ current_user.contacto_facturacion or '' }}" placeholder="Ej. Ana Perez">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Email de facturacion
+              <input type="email" name="email_facturacion" value="{{ current_user.email_facturacion or '' }}" placeholder="facturacion@empresa.uy">
+            </label>
+            <label>
+              Notas operativas
+              <input type="text" name="notas_operativas" value="{{ current_user.notas_operativas or '' }}" placeholder="Horario, acceso, referencias">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Zonas operativas frecuentes
+              <input type="text" name="zonas_cobertura" value="{{ current_user.zonas_cobertura or '' }}" placeholder="Sucursales, barrios, localidades">
+            </label>
+            <label>
+              Radio logistico de referencia (km)
+              <input type="number" step="1" min="0" name="radio_cobertura_km" value="{{ '%.0f'|format(current_user.radio_cobertura_km or 25) }}">
+            </label>
+          </div>
+
+          <div class="profile-inline-meta">
+            <span>Plan actual: <strong>{{ current_user.plan.name if current_user.plan else 'Pago por uso' }}</strong></span>
+            <span>Perfil fiscal: <strong>{{ company_fiscal_completion }}%</strong></span>
+          </div>
+
+          <button type="submit" class="btn">Guardar perfil</button>
+        </form>
+      </details>
+
+      {% if company_alerts %}
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Alertas operativas</h2>
+            <p>Lo más importante para revisar ahora mismo.</p>
+          </div>
+        </div>
+        <div class="status-overview-list">
+          {% for alert in company_alerts %}
+          <div class="status-overview-item">
+            <strong>{{ alert.label }}</strong>
+            <span>{{ alert.detail }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if company_recent_ratings %}
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Ultimas valoraciones</h2>
+            <p>Feedback recibido de operadores al cerrar servicios.</p>
+          </div>
+        </div>
+        <div class="status-overview-list">
+          {% for solicitud in company_recent_ratings %}
+          <div class="status-overview-item">
+            <strong>Solicitud #{{ solicitud.id }} · {{ solicitud.empresa_rating }}/5 estrellas</strong>
+            <div class="rating-stars rating-stars-inline" aria-label="{{ solicitud.empresa_rating }} de 5">
+              {% for star in range(1, 6) %}
+              <span class="rating-star {% if star <= solicitud.empresa_rating %}is-filled{% endif %}">★</span>
+              {% endfor %}
+            </div>
+            <span>{{ solicitud.gestor_nombre }}{% if solicitud.empresa_rating_comment %} · {{ solicitud.empresa_rating_comment }}{% endif %}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if completed_to_rate_operator %}
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Valorar operadores</h2>
+            <p>Califica al operador despues del cierre para construir reputacion visible en la plataforma.</p>
+          </div>
+        </div>
+        <div class="service-card-grid">
+          {% for s in completed_to_rate_operator %}
+          <article class="service-card">
+            <div class="service-card-top">
+              <div>
+                <p class="service-kicker">Solicitud #{{ s.id }}</p>
+                <h3 class="verified-name">
+                  <span>{{ s.gestor_nombre }}</span>
+                  {% if s.gestor_user and (s.gestor_user.verificado_ministerio or s.gestor_user.operador_habilitado) %}
+                  <span class="verified-check" title="Verificado con fuente oficial">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                  {% endif %}
+                </h3>
+              </div>
+              <div class="service-statuses">
+                <span class="status-chip status-aceptada">Completada</span>
+                {% if s.gestor_user and s.gestor_user.rating_promedio %}
+                <span class="status-chip status-aceptada">Promedio {{ s.gestor_user.rating_promedio }}/5</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="service-meta">
+              <div><span>Residuo</span><strong>{{ s.tipo }}</strong></div>
+              <div><span>Fecha</span><strong>{{ s.fecha_label }}</strong></div>
+              <div><span>Destino</span><strong>{{ s.destino_final or 'Informado' }}</strong></div>
+              <div><span>Historial</span><strong>{{ s.gestor_user.rating_cantidad if s.gestor_user else 0 }} valoracion(es)</strong></div>
+            </div>
+            {% if s.gestor_user and s.gestor_user.rating_promedio %}
+            <div class="rating-stars" aria-label="Promedio {{ s.gestor_user.rating_promedio }} de 5">
+              {% set avg_rating = s.gestor_user.rating_promedio|round(0, 'common')|int %}
+              {% for star in range(1, 6) %}
+              <span class="rating-star {% if star <= avg_rating %}is-filled{% endif %}">★</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+            <form action="{{ url_for('calificar_operador', sid=s.id) }}" method="post" class="service-complete-form">
+              <div class="service-form-grid">
+                <fieldset class="star-picker">
+                  <legend>Estrellas</legend>
+                  <div class="star-picker-row">
+                    {% for star in range(5, 0, -1) %}
+                    <input type="radio" id="operator-rating-{{ s.id }}-{{ star }}" name="operador_rating" value="{{ star }}" required>
+                    <label for="operator-rating-{{ s.id }}-{{ star }}" title="{{ star }} estrella(s)">★</label>
+                    {% endfor %}
+                  </div>
+                </fieldset>
+                <label class="service-field-wide">
+                  <span>Comentario</span>
+                  <input type="text" name="operador_rating_comment" placeholder="Puntualidad, documentacion, coordinacion, trato, etc.">
+                </label>
+              </div>
+              <button type="submit" class="btn secondary-btn">Guardar valoracion</button>
+            </form>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <div class="panel-head inline-head">
+        <div>
+          <h2>Solicitudes activas{% if selected_estado %} · {{ selected_estado|capitalize }}{% endif %}</h2>
+          <p>{{ filtered_solicitudes|length }} resultado(s) en la vista actual.</p>
+        </div>
+      </div>
+
+      {% if featured_solicitudes %}
+      <div class="request-card-grid">
+        {% for s in featured_solicitudes %}
+        <a href="{{ url_for('dashboard', estado=selected_estado or None, sid=s.id) }}" class="request-card {% if selected_solicitud and selected_solicitud.id == s.id %}request-card-active{% endif %}">
+          <div class="request-card-top">
+            <div>
+              <p class="service-kicker">Solicitud #{{ s.id }}</p>
+                <h3>{{ s.tipo }}</h3>
+              </div>
+              <span class="status-chip status-{{ s.estado }}">{{ s.estado|capitalize }}</span>
+            </div>
+
+          <div class="request-card-meta">
+            <span>{{ s.gestor_nombre }}</span>
+            <span>{{ s.fecha_label }}</span>
+            <span>{{ s.ubicacion }}</span>
+          </div>
+
+          <div class="request-card-summary">
+            {% if s.estado == 'pendiente' %}
+            Esperando aceptacion del operador.
+            {% elif s.estado == 'aceptada' %}
+            Retiro aceptado y pendiente de cierre.
+            {% elif s.estado == 'retirada' %}
+            Retiro ya realizado, falta carga de peso y documentos.
+            {% elif s.estado == 'completada' %}
+            Cierre disponible para revisar.
+            {% else %}
+            Solicitud rechazada, revisar reasignacion.
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if selected_solicitud %}
+      <section class="panel-card surface-card request-detail-card">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Detalle de solicitud #{{ selected_solicitud.id }}</h2>
+            <p>{{ selected_solicitud.tipo }} · {{ selected_solicitud.fecha_label }}</p>
+          </div>
+          <span class="status-chip status-{{ selected_solicitud.estado }}">{{ selected_solicitud.estado|capitalize }}</span>
+        </div>
+
+        <div class="request-detail-grid">
+          <div>
+            <span>Operador</span>
+              <strong class="verified-name">
+                <span>{{ selected_solicitud.gestor_nombre }}</span>
+                {% if selected_solicitud.gestor_user and (selected_solicitud.gestor_user.verificado_ministerio or selected_solicitud.gestor_user.operador_habilitado) %}
+                <span class="verified-check" title="Verificado con fuente oficial">
+                  <i class="fa-solid fa-check"></i>
+                </span>
+                {% endif %}
+              </strong>
+          </div>
+          <div>
+            <span>Zona</span>
+            <strong>{{ selected_solicitud.ubicacion }}</strong>
+          </div>
+          <div>
+            <span>Direccion</span>
+            <strong>{{ selected_solicitud.direccion_retiro or current_user.direccion_base or 'Sin direccion cargada' }}</strong>
+          </div>
+          <div>
+            <span>Peso estimado</span>
+            <strong>{{ '%.2f'|format(selected_solicitud.peso_estimado) }} kg</strong>
+          </div>
+          <div>
+            <span>Peso real</span>
+            <strong>{{ '%.2f'|format(selected_solicitud.peso_real) ~ ' kg' if selected_solicitud.peso_real else 'Pendiente' }}</strong>
+          </div>
+          <div>
+            <span>Retiro realizado</span>
+            <strong>{{ selected_solicitud.retirada_en.strftime('%d/%m/%Y %H:%M') if selected_solicitud.retirada_en else 'Pendiente' }}</strong>
+          </div>
+          <div>
+            <span>Destino final</span>
+            <strong>{{ selected_solicitud.destino_final or 'Pendiente' }}</strong>
+          </div>
+        </div>
+
+        <div class="request-detail-panels">
+          <div class="info-box">
+            <strong>Acta de retiro</strong>
+            <p>{{ selected_solicitud.retiro_observaciones or selected_solicitud.observaciones or 'Sin observaciones cargadas.' }}</p>
+          </div>
+          <div class="info-box">
+            <strong>Proximo paso</strong>
+            <p>
+              {% if selected_solicitud.estado == 'pendiente' %}
+              Esperando aceptacion del operador.
+              {% elif selected_solicitud.estado == 'aceptada' %}
+              El operador acepto el servicio y falta confirmar el retiro realizado.
+              {% elif selected_solicitud.estado == 'retirada' %}
+              El retiro ya se realizo. Ahora falta el cierre con peso final y respaldo.
+              {% elif selected_solicitud.estado == 'completada' %}
+              Revisar documentos, peso final y archivar el servicio.
+              {% else %}
+              Revisar el motivo operativo y decidir si queres reasignar.
+              {% endif %}
+            </p>
+          </div>
+          <div class="info-box">
+            <strong>Entrego / recibio</strong>
+            <p>{{ selected_solicitud.retiro_entregado_por or 'Sin dato' }} · {{ selected_solicitud.retiro_recibido_por or 'Sin dato' }}</p>
+          </div>
+          {% if selected_solicitud.empresa_rating %}
+          <div class="info-box">
+            <strong>Valoracion recibida</strong>
+            <div class="rating-stars rating-stars-inline" aria-label="{{ selected_solicitud.empresa_rating }} de 5">
+              {% for star in range(1, 6) %}
+              <span class="rating-star {% if star <= selected_solicitud.empresa_rating %}is-filled{% endif %}">★</span>
+              {% endfor %}
+            </div>
+            <p>{{ selected_solicitud.empresa_rating }}/5 estrellas{% if selected_solicitud.empresa_rating_comment %} · {{ selected_solicitud.empresa_rating_comment }}{% endif %}</p>
+          </div>
+          {% endif %}
+          {% if selected_solicitud.operador_rating %}
+          <div class="info-box">
+            <strong>Valoracion al operador</strong>
+            <div class="rating-stars rating-stars-inline" aria-label="{{ selected_solicitud.operador_rating }} de 5">
+              {% for star in range(1, 6) %}
+              <span class="rating-star {% if star <= selected_solicitud.operador_rating %}is-filled{% endif %}">★</span>
+              {% endfor %}
+            </div>
+            <p>{{ selected_solicitud.operador_rating }}/5 estrellas{% if selected_solicitud.operador_rating_comment %} · {{ selected_solicitud.operador_rating_comment }}{% endif %}</p>
+          </div>
+          {% endif %}
+        </div>
+
+          <div class="request-detail-panels">
+            <div class="info-box">
+              <strong>Desglose economico</strong>
+              <p>Estado economico: <strong>{{ economic_state_label(selected_solicitud.estado_economico) }}</strong></p>
+              <p>Transporte estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.monto_transporte_uyu or 0) }}</strong></p>
+              <p>Gestion y tratamiento estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.monto_gestion_uyu or 0) }}</strong></p>
+              <p>Certificado estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.monto_certificado_uyu or 0) }}</strong></p>
+              <p>Fee plataforma estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.monto_plataforma_uyu or 0) }}</strong></p>
+            </div>
+            <div class="info-box">
+              <strong>Base fiscal y cierre economico</strong>
+              <p>Moneda: <strong>{{ selected_solicitud.moneda or 'UYU' }}</strong></p>
+              <p>Subtotal estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.subtotal_estimado_display or 0) }}</strong></p>
+              <p>IVA estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.iva_uyu or 0) }}</strong></p>
+              <p>Total estimado: <strong>UYU {{ '%.2f'|format(selected_solicitud.total_estimado_display) }}</strong></p>
+              {% if selected_solicitud.total_final_display is not none %}
+              <p>Total final validado: <strong>UYU {{ '%.2f'|format(selected_solicitud.total_final_display) }}</strong></p>
+              <p>Ajuste economico: <strong>UYU {{ '%.2f'|format(selected_solicitud.ajuste_economico_uyu or 0) }}</strong></p>
+              {% else %}
+              <p>Total final: <strong>Pendiente de cierre operativo</strong></p>
+              {% endif %}
+              <p>Comprobante sugerido: <strong>{{ selected_solicitud.cfe_tipo_sugerido or 'eFactura' }}</strong></p>
+            </div>
+          </div>
+
+        <div class="doc-links">
+          {% if selected_solicitud.comprobante_peso %}<a href="{{ selected_solicitud.comprobante_peso }}" target="_blank">Comprobante de peso</a>{% endif %}
+          {% if selected_solicitud.evidencia_retiro %}<a href="{{ selected_solicitud.evidencia_retiro }}" target="_blank">Evidencia de retiro</a>{% endif %}
+          {% if selected_solicitud.certificado_destino %}<a href="{{ selected_solicitud.certificado_destino }}" target="_blank">Certificado de destino</a>{% endif %}
+          {% if not selected_solicitud.comprobante_peso and not selected_solicitud.evidencia_retiro and not selected_solicitud.certificado_destino %}
+          <span class="muted-label">Sin documentos cargados todavia.</span>
+          {% endif %}
+        </div>
+
+        <div class="timeline-card">
+          <div class="panel-head inline-head">
+            <div>
+              <h2>Linea de tiempo</h2>
+              <p>Historial trazable del retiro.</p>
+            </div>
+          </div>
+          <div class="timeline-list">
+            {% for item in selected_timeline %}
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div>
+                <strong>{{ item.label }}</strong>
+                <p>{{ item.detail or 'Sin detalle adicional.' }}</p>
+                <span>{{ item.actor }} · {{ item.created_at }}</span>
+              </div>
+            </div>
+            {% else %}
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div>
+                <strong>Sin eventos aun</strong>
+                <p>Esta solicitud todavia no tiene movimientos registrados.</p>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <div class="panel-head inline-head">
+        <div>
+          <h2>Historial</h2>
+          <p>Vista completa de las solicitudes incluidas en el filtro actual.</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Residuo</th>
+              <th>Transportista</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Control</th>
+              <th>Proximo paso</th>
+              <th>Destino</th>
+              <th>Respaldo</th>
+              <th class="amount-col">Estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in filtered_solicitudes %}
+            <tr>
+              <td>#{{ s.id }}</td>
+              <td>{{ s.tipo }}</td>
+              <td>{{ s.gestor_nombre }}</td>
+              <td>{{ s.fecha_label }}</td>
+              <td><span class="status-chip status-{{ s.estado }}">{{ s.estado|capitalize }}</span></td>
+              <td>
+                {% if s.nivel_riesgo == 'alto' %}
+                <span class="status-chip status-rechazada">Residuo sensible</span>
+                {% elif s.alerta_peso %}
+                <span class="status-chip status-pendiente">Desvio {{ s.desvio_peso_pct }}%</span>
+                {% else %}
+                <span class="status-chip status-aceptada">Normal</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.estado == 'pendiente' %}
+                Esperando aceptacion del operador
+                {% elif s.estado == 'aceptada' %}
+                Operador confirmado, pendiente de retiro
+                {% elif s.estado == 'retirada' %}
+                Retiro realizado, esperando cierre documental
+                {% elif s.estado == 'completada' and not (s.comprobante_peso or s.evidencia_retiro or s.certificado_destino) %}
+                Solicitar respaldo documental
+                {% elif s.estado == 'completada' %}
+                Revisar cierre y archivar respaldo
+                {% else %}
+                Elegir otro operador o volver a cargar
+                {% endif %}
+              </td>
+              <td>{{ s.destino_final or '-' }}</td>
+              <td>
+                {% if s.documentacion_completa %}
+                <span class="status-chip status-completada">Completa</span>
+                {% elif s.comprobante_peso or s.evidencia_retiro or s.certificado_destino %}
+                <span class="status-chip status-pendiente">Parcial</span>
+                {% else %}
+                <span class="status-chip status-pendiente">Pendiente</span>
+                {% endif %}
+              </td>
+              <td class="amount-cell">
+                <div class="economic-cell">
+                  <span class="status-chip status-chip-neutral">{{ economic_state_label(s.estado_economico) }}</span>
+                  <div class="economic-line">Estimado: <strong>UYU {{ '%.2f'|format(s.total_estimado_display) }}</strong></div>
+                  {% if s.total_final_display is not none %}
+                  <div class="economic-line">Final: <strong>UYU {{ '%.2f'|format(s.total_final_display) }}</strong></div>
+                  {% else %}
+                  <div class="economic-line">Final pendiente</div>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="10" class="text-center">No hay solicitudes para ese estado.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

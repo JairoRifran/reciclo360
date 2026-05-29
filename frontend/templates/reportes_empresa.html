@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Reportes | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <p>{{ current_user.email }}</p>
+        <h1>Reportes de operacion</h1>
+      </div>
+
+      <div class="dashboard-actions">
+        <a href="{{ url_for('dashboard') }}" class="btn secondary-btn">Volver al panel</a>
+        <a href="{{ url_for('reportes_exportar', estado=selected_estado, tipo=selected_tipo) }}" class="btn">Exportar CSV</a>
+      </div>
+
+      <form method="get" class="filter-grid">
+        <select name="estado">
+          <option value="">Todos los estados</option>
+          <option value="pendiente" {% if selected_estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+          <option value="aceptada" {% if selected_estado == 'aceptada' %}selected{% endif %}>Aceptada</option>
+          <option value="completada" {% if selected_estado == 'completada' %}selected{% endif %}>Completada</option>
+          <option value="rechazada" {% if selected_estado == 'rechazada' %}selected{% endif %}>Rechazada</option>
+        </select>
+        <select name="tipo">
+          <option value="">Todos los tipos</option>
+          {% for tipo in available_tipos %}
+          <option value="{{ tipo }}" {% if selected_tipo == tipo %}selected{% endif %}>{{ tipo }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="{{ url_for('reportes') }}" class="btn secondary-btn">Limpiar</a>
+      </form>
+
+      <div class="metrics">
+        <div class="metric-card"><div><div class="value">{{ report_summary.total_requests }}</div><div class="label">Solicitudes</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ report_summary.completed_requests }}</div><div class="label">Completadas</div></div></div>
+        <div class="metric-card"><div><div class="value">{{ report_summary.total_estimated_weight }}</div><div class="label">Kg estimados</div></div></div>
+        <div class="metric-card"><div><div class="value">UYU {{ '%.0f'|format(report_summary.total_amount) }}</div><div class="label">Total facturado</div></div></div>
+        <div class="metric-card"><div><div class="value">UYU {{ '%.0f'|format(report_summary.total_iva) }}</div><div class="label">IVA estimado</div></div></div>
+        <div class="metric-card"><div><div class="value">UYU {{ '%.0f'|format(report_summary.total_platform) }}</div><div class="label">Fee plataforma</div></div></div>
+      </div>
+
+      <div class="grid-2 dashboard-company-grid">
+        <section class="panel-card surface-card">
+          <div class="panel-head">
+            <div>
+              <h2>Por tipo de residuo</h2>
+              <p>Volumen y monto agrupados por categoria operativa.</p>
+            </div>
+          </div>
+          <div class="table-container compact-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Cantidad</th>
+                  <th>Kg</th>
+                  <th class="amount-col">Monto total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in report_by_tipo %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  <td>{{ item.count }}</td>
+                  <td>{{ '%.2f'|format(item.weight) }}</td>
+                  <td class="amount-cell">UYU {{ '%.2f'|format(item.amount) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center">Sin datos para este filtro.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel-card surface-card">
+          <div class="panel-head">
+            <div>
+              <h2>Por operador</h2>
+              <p>Quien retiro mas servicios y monto asociado.</p>
+            </div>
+          </div>
+          <div class="table-container compact-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Operador</th>
+                  <th>Servicios</th>
+                  <th class="amount-col">Facturado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in report_by_operador %}
+                <tr>
+                  <td>{{ item.label }}</td>
+                  <td>{{ item.count }}</td>
+                  <td class="amount-cell">UYU {{ '%.2f'|format(item.amount) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-center">Sin datos para este filtro.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <section class="panel-card surface-card">
+        <div class="panel-head">
+          <div>
+            <h2>Actividad reciente</h2>
+            <p>Evolucion mensual y detalle de solicitudes incluidas en el reporte.</p>
+          </div>
+        </div>
+
+        <div class="report-monthly">
+          {% for month in report_monthly %}
+          <div class="report-month-card">
+            <strong>{{ month.label }}</strong>
+            <span>{{ month.count }} solicitud(es)</span>
+          </div>
+          {% else %}
+          <div class="empty-state"><p>No hay actividad para mostrar.</p></div>
+          {% endfor %}
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Residuo</th>
+                <th>Estado</th>
+                <th>Operador</th>
+                <th>Fecha</th>
+                <th>Peso</th>
+                <th class="amount-col">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in solicitudes %}
+              <tr>
+                <td>#{{ s.id }}</td>
+                <td>{{ s.tipo }}</td>
+                <td><span class="status-chip status-{{ s.estado }}">{{ s.estado|capitalize }}</span></td>
+                <td>{{ s.gestor_nombre }}</td>
+                <td>{{ s.fecha_label }}</td>
+                <td>{{ '%.2f'|format(s.peso_real or s.peso_estimado) }} kg</td>
+                <td class="amount-cell">UYU {{ '%.2f'|format(s.total_uyu or s.precio_final or s.precio_estimado) }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" class="text-center">No hay solicitudes para ese filtro.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+{% endblock %}

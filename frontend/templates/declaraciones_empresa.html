@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% block title %}Declaraciones | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Declaraciones y cumplimiento regulatorio</h1>
+          </div>
+
+          <section class="dashboard-intro-card surface-card">
+            <div class="dashboard-intro-copy">
+              <span class="dashboard-kicker"><i class="fa-regular fa-file-lines"></i> Expediente regulatorio</span>
+              <h2>Prepara IMM y Ministerio con datos conciliados desde la operativa real.</h2>
+              <p>Este modulo consolida retiros, operadores, firmante y respaldo para dejar cada presentacion pronta o lo mas avanzada posible.</p>
+            </div>
+            <div class="dashboard-guide-grid">
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-building-circle-check"></i>
+                <div>
+                  <strong>IMM</strong>
+                  <span>Seguimiento del expediente para residuos no domiciliarios en Montevideo.</span>
+                </div>
+              </div>
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-leaf"></i>
+                <div>
+                  <strong>Ministerio</strong>
+                  <span>Base anual para declaracion jurada compatible con respaldo SIA.</span>
+                </div>
+              </div>
+              <div class="dashboard-guide-item">
+                <i class="fa-solid fa-scale-balanced"></i>
+                <div>
+                  <strong>Conciliacion</strong>
+                  <span>Detecta faltantes de firmante, contrato, operadores o documentos.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="surface-card declaration-journey-card">
+            <div class="panel-head inline-head">
+              <div>
+                <h2>Como usar este modulo</h2>
+                <p>Sigue este orden para que cada declaracion quede clara, conciliada y lista para revisar antes de presentar.</p>
+              </div>
+            </div>
+            <div class="declaration-journey-grid">
+              <div class="declaration-journey-step">
+                <div class="declaration-journey-icon"><i class="fa-solid fa-layer-group"></i></div>
+                <strong>1. Consolidar operacion</strong>
+                <span>Tomamos solicitudes, operadores, peso y cierres del periodo para armar una base unica.</span>
+              </div>
+              <div class="declaration-journey-step">
+                <div class="declaration-journey-icon"><i class="fa-solid fa-user-check"></i></div>
+                <strong>2. Completar firmante</strong>
+                <span>Define quien firma, con que documento y si hace falta un apoderado o respaldo adicional.</span>
+              </div>
+              <div class="declaration-journey-step">
+                <div class="declaration-journey-icon"><i class="fa-solid fa-paperclip"></i></div>
+                <strong>3. Adjuntar expediente</strong>
+                <span>Sube contrato, formulario, poder y cualquier respaldo que vaya con la presentacion.</span>
+              </div>
+              <div class="declaration-journey-step">
+                <div class="declaration-journey-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <strong>4. Marcar estado</strong>
+                <span>Deja el caso como borrador, listo para presentar, presentado u observado segun corresponda.</span>
+              </div>
+            </div>
+          </section>
+
+          <div class="metrics">
+            <div class="metric-card"><div><div class="value">{{ declaration_summary.ready }}</div><div class="label">Listas para presentar</div></div></div>
+            <div class="metric-card"><div><div class="value">{{ declaration_summary.presented }}</div><div class="label">Presentadas</div></div></div>
+            <div class="metric-card"><div><div class="value">{{ declaration_summary.pending }}</div><div class="label">Pendientes</div></div></div>
+            <div class="metric-card"><div><div class="value">{{ declaration_summary.reconciled }}</div><div class="label">Conciliadas</div></div></div>
+          </div>
+
+          <div class="declaration-card-list">
+            {% for declaration in declaraciones %}
+            <section id="{{ declaration.organismo }}" class="declaration-card surface-card">
+              <div class="declaration-card-head">
+                <div>
+                  <p class="service-kicker">{{ declaration.config.short_label }} · Periodo {{ periodo_actual }}</p>
+                  <h2>{{ declaration.config.label }}</h2>
+                  <p>{{ declaration.config.description }}</p>
+                </div>
+                <div class="declaration-head-meta">
+                  <span class="status-chip status-aceptada">{{ declaration.state_label }}</span>
+                  <a href="{{ url_for('declaraciones_exportar', organismo=declaration.organismo, periodo=periodo_actual) }}" class="btn secondary-btn">
+                    <i class="fa-solid fa-download"></i> Exportar resumen
+                  </a>
+                </div>
+              </div>
+
+              <div class="declaration-purpose-grid">
+                <div class="declaration-purpose-card">
+                  <span class="declaration-purpose-label">Para que sirve</span>
+                  <strong>{{ declaration.config.short_label }}</strong>
+                  <p>{{ declaration.config.official_format }}</p>
+                </div>
+                <div class="declaration-purpose-card">
+                  <span class="declaration-purpose-label">Que revisa Residuos 360</span>
+                  <strong>{{ declaration.checklist_ready }}/{{ declaration.checklist_total }} validaciones</strong>
+                  <p>Perfil, firmante, operadores usados, cierres documentales y adjuntos del expediente.</p>
+                </div>
+                <div class="declaration-purpose-card">
+                  <span class="declaration-purpose-label">Que sale de aqui</span>
+                  <strong>Resumen exportable</strong>
+                  <p>Genera un resumen listo para revisar con solicitudes, montos, peso y faltantes visibles.</p>
+                </div>
+              </div>
+
+              <div class="declaration-stat-grid">
+                <div class="declaration-stat-card">
+                  <span>Solicitudes consideradas</span>
+                  <strong>{{ declaration.requests_count }}</strong>
+                </div>
+                <div class="declaration-stat-card">
+                  <span>Operadores involucrados</span>
+                  <strong>{{ declaration.operators_count }}</strong>
+                </div>
+                <div class="declaration-stat-card">
+                  <span>Peso consolidado</span>
+                  <strong>{{ '%.2f'|format(declaration.total_weight) }} kg</strong>
+                </div>
+                <div class="declaration-stat-card">
+                  <span>Monto consolidado</span>
+                  <strong>UYU {{ '%.2f'|format(declaration.total_amount) }}</strong>
+                </div>
+              </div>
+
+              <div class="request-detail-panels">
+                <div class="info-box">
+                  <strong>Expectativa de presentacion</strong>
+                  <p>{{ declaration.config.official_format }}</p>
+                  <p>Frecuencia orientativa: {{ declaration.config.expected_frequency }}</p>
+                </div>
+                <div class="info-box">
+                  <strong>Adjuntos del expediente</strong>
+                  <div class="doc-links doc-links-compact">
+                    {% for file_label, file_url in declaration.files %}
+                      {% if file_url %}
+                      <a href="{{ file_url }}" target="_blank">{{ file_label }}</a>
+                      {% else %}
+                      <span class="muted-label">{{ file_label }} pendiente</span>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="declaration-section-head">
+                <div>
+                  <strong>Chequeo de conciliacion</strong>
+                  <span>Esto te muestra si la declaracion ya tiene la base minima para avanzar.</span>
+                </div>
+              </div>
+              <div class="declaration-checklist">
+                {% for item in declaration.checklist %}
+                <div class="declaration-check-item {% if item.ok %}is-ok{% else %}is-pending{% endif %}">
+                  <div class="declaration-check-icon">
+                    <i class="fa-solid {% if item.ok %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+                  </div>
+                  <div>
+                    <strong>{{ item.label }}</strong>
+                    <span>{{ item.detail }}</span>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+
+              {% if declaration.pending_docs %}
+              <div class="document-docket-footnote">
+                <span><i class="fa-solid fa-triangle-exclamation"></i> Pendientes del expediente:
+                  {% for doc_label, _ in declaration.pending_docs %}
+                    {{ doc_label }}{% if not loop.last %}, {% endif %}
+                  {% endfor %}
+                </span>
+              </div>
+              {% endif %}
+
+              <details class="accordion-card declaration-form-card" {% if declaration.record.estado in ['faltan_datos', 'observado', 'vencido'] %}open{% endif %}>
+                <summary>
+                  <div>
+                    <strong>Editar expediente {{ declaration.config.short_label }}</strong>
+                    <span>{{ declaration.checklist_ready }}/{{ declaration.checklist_total }} validaciones listas · firmante, adjuntos y fechas</span>
+                  </div>
+                  <span class="accordion-icon">+</span>
+                </summary>
+
+                <form action="{{ url_for('declaraciones_guardar', organismo=declaration.organismo) }}" method="post" enctype="multipart/form-data" class="stack-form accordion-form">
+                  <input type="hidden" name="periodo" value="{{ periodo_actual }}">
+
+                  <div class="declaration-form-group">
+                    <div class="declaration-form-intro">
+                      <strong><i class="fa-solid fa-flag-checkered"></i> Estado y calendario</strong>
+                      <span>Define en que etapa esta la presentacion y para cuando necesitas tenerla pronta.</span>
+                    </div>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Estado del expediente
+                      <select name="estado">
+                        {% for value, label in [
+                          ('faltan_datos', 'Faltan datos'),
+                          ('borrador_listo', 'Borrador listo'),
+                          ('listo_para_presentar', 'Listo para presentar'),
+                          ('presentado', 'Presentado'),
+                          ('observado', 'Observado'),
+                          ('vencido', 'Vencido')
+                        ] %}
+                        <option value="{{ value }}" {% if declaration.record.estado == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <label>
+                      Fecha objetivo
+                      <input type="date" name="fecha_objetivo" value="{{ declaration.record.fecha_objetivo.isoformat() if declaration.record.fecha_objetivo else '' }}">
+                    </label>
+                  </div>
+
+                  <div class="declaration-form-group">
+                    <div class="declaration-form-intro">
+                      <strong><i class="fa-solid fa-user-pen"></i> Firmante y representacion</strong>
+                      <span>Completa la persona firmante y, si corresponde, los datos del apoderado.</span>
+                    </div>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Nombre del firmante
+                      <input type="text" name="firmante_nombre" value="{{ declaration.record.firmante_nombre or '' }}" placeholder="Ej. Paula Rodriguez">
+                    </label>
+                    <label>
+                      Documento del firmante
+                      <input type="text" name="firmante_documento" value="{{ declaration.record.firmante_documento or '' }}" placeholder="Cedula o identificacion">
+                    </label>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Cargo del firmante
+                      <input type="text" name="firmante_cargo" value="{{ declaration.record.firmante_cargo or '' }}" placeholder="Ej. Responsable ambiental">
+                    </label>
+                    <label>
+                      Fecha de presentacion
+                      <input type="date" name="fecha_presentacion" value="{{ declaration.record.fecha_presentacion.isoformat() if declaration.record.fecha_presentacion else '' }}">
+                    </label>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Nombre del apoderado
+                      <input type="text" name="apoderado_nombre" value="{{ declaration.record.apoderado_nombre or '' }}" placeholder="Si aplica">
+                    </label>
+                    <label>
+                      Documento del apoderado
+                      <input type="text" name="apoderado_documento" value="{{ declaration.record.apoderado_documento or '' }}" placeholder="Si aplica">
+                    </label>
+                  </div>
+
+                  <div class="declaration-form-group">
+                    <div class="declaration-form-intro">
+                      <strong><i class="fa-solid fa-paperclip"></i> Adjuntos del expediente</strong>
+                      <span>Sube los documentos principales que respaldan la presentacion.</span>
+                    </div>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Contrato de transporte
+                      <input type="file" name="contrato_transporte" accept=".pdf,.doc,.docx">
+                    </label>
+                    <label>
+                      Formulario borrador
+                      <input type="file" name="formulario_borrador" accept=".pdf,.doc,.docx,.xls,.xlsx">
+                    </label>
+                  </div>
+                  <div class="grid-2">
+                    <label>
+                      Poder o documento del firmante
+                      <input type="file" name="poder_documento" accept=".pdf,.doc,.docx">
+                    </label>
+                    <label>
+                      Respaldo extra
+                      <input type="file" name="respaldo_extra" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    </label>
+                  </div>
+
+                  <label>
+                    Observaciones
+                    <input type="text" name="observaciones" value="{{ declaration.record.observaciones or '' }}" placeholder="Notas internas, faltantes o recordatorios">
+                  </label>
+
+                  <button type="submit" class="btn secondary-btn">Guardar expediente</button>
+                </form>
+              </details>
+            </section>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

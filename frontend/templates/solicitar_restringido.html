@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Solicitud no disponible | Residuos 360{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container">
+    <div class="hero-grid-compact">
+      <article class="hero-copy">
+        <p class="eyebrow">{{ eyebrow }}</p>
+        <h1 class="hero-title">{{ title }}</h1>
+        <p>{{ description }}</p>
+
+        <div class="hero-points">
+          <div class="hero-point">
+            <i class="fa-solid fa-building"></i>
+            <span>Las empresas generadoras son quienes inician la solicitud operativa.</span>
+          </div>
+          <div class="hero-point">
+            <i class="fa-solid fa-route"></i>
+            <span>Transportistas e IMM participan desde sus paneles de operacion, trazabilidad y seguimiento.</span>
+          </div>
+          <div class="hero-point">
+            <i class="fa-regular fa-folder-open"></i>
+            <span>La plataforma mantiene separados los permisos para evitar confusiones operativas.</span>
+          </div>
+        </div>
+
+        <div class="hero-cta">
+          <a href="{{ primary_href }}" class="btn">{{ primary_label }}</a>
+          <a href="{{ secondary_href }}" class="btn-ghost">{{ secondary_label }}</a>
+        </div>
+      </article>
+
+      <aside class="hero-panel">
+        <div class="hero-panel-main">
+          <p class="eyebrow">Como funciona en Residuos 360</p>
+          <h2>Flujo recomendado</h2>
+          <div class="hero-feature-list">
+            <article class="hero-feature-item">
+              <i class="fa-solid fa-file-circle-plus"></i>
+              <div>
+                <strong>1. La empresa solicita</strong>
+                <p>La cuenta empresa crea el retiro y define residuo, ubicacion y necesidad operativa.</p>
+              </div>
+            </article>
+            <article class="hero-feature-item">
+              <i class="fa-solid fa-truck-fast"></i>
+              <div>
+                <strong>2. El operador interviene</strong>
+                <p>El transportista acepta, programa, ejecuta y carga la informacion de retiro.</p>
+              </div>
+            </article>
+            <article class="hero-feature-item">
+              <i class="fa-solid fa-landmark"></i>
+              <div>
+                <strong>3. La IMM observa</strong>
+                <p>El panel institucional permite visualizar trazabilidad, documentacion, alertas y reportes.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}

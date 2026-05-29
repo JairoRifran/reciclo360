@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Transportistas | Panel Institucional IMM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+        <div class="dashboard-container">
+          <div class="dashboard-header">
+            <p>{{ current_user.email }}</p>
+            <h1>Transportistas participantes</h1>
+          </div>
+          <div class="grid-3 institutional-kicker-grid">
+            <article class="info-box institutional-mini-panel mini-panel-ecosystem">
+              <strong>Transportistas activos</strong>
+              <p>{{ operadores_rows|length }} operador(es) con actividad visible en el piloto.</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-operations">
+              <strong>Empresas vinculadas</strong>
+              <p>{{ operadores_rows|sum(attribute='retiros') }} retiro(s) distribuidos entre transportistas participantes.</p>
+            </article>
+            <article class="info-box institutional-mini-panel mini-panel-alert">
+              <strong>Observaciones operativas</strong>
+              <p>{{ operadores_rows|sum(attribute='observados') }} retiro(s) muestran seguimiento documental o alertas.</p>
+            </article>
+          </div>
+          <div class="table-container institutional-table-shell">
+            <table class="institutional-table institutional-wide-table">
+              <thead>
+                <tr>
+                  <th>Transportista</th>
+                  <th>RUT</th>
+                  <th>Zona</th>
+                  <th>Verificacion</th>
+                  <th>Empresas</th>
+                  <th>Retiros</th>
+                  <th>Observados</th>
+                  <th>Matriculas</th>
+                  <th>Categorias</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in operadores_rows %}
+                <tr>
+                  <td>
+                    <strong>{{ row.user.nombre_visible }}</strong>
+                    <small>{{ row.user.numero_habilitacion or row.user.ministerio_modalidad or 'Registro no detallado' }}</small>
+                  </td>
+                  <td>{{ row.user.rut or row.user.ministerio_rut or '-' }}</td>
+                  <td>{{ row.user.ubicacion or '-' }}</td>
+                  <td><span class="status-chip {% if row.user.verificado_ministerio %}status-chip-success{% else %}status-chip-warning{% endif %}">{{ 'Verificado' if row.user.verificado_ministerio else 'Pendiente' }}</span></td>
+                  <td>{{ row.empresas|length }}</td>
+                  <td>{{ row.retiros }}</td>
+                  <td>{{ row.observados }}</td>
+                  <td>{{ row.matriculas|join(', ') if row.matriculas else '-' }}</td>
+                  <td>{{ row.user.categorias_residuo or row.user.ministerio_categorias or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center">No hay transportistas para mostrar.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

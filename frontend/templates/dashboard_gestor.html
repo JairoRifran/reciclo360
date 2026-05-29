@@ -1,0 +1,814 @@
+{% extends "base.html" %}
+{% block title %}Panel Transportista | Residuos 360{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="section section-white">
+  <div class="container page-shell">
+    <div class="dashboard-shell">
+      {% include "_dashboard_sidebar.html" %}
+      <div class="dashboard-main">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <p>{{ current_user.email }}</p>
+        <h1 class="verified-name">
+          <span>{{ current_user.nombre_visible }}</span>
+          {% if current_user.verificado_ministerio or current_user.operador_habilitado %}
+          <span class="verified-check" title="Verificado con fuente oficial">
+            <i class="fa-solid fa-check"></i>
+          </span>
+          {% endif %}
+        </h1>
+        <div class="verification-banner">
+          <strong>{{ 'Operador verificado por Ministerio' if current_user.verificado_ministerio else 'Verificacion automatica pendiente o sin coincidencia' }}</strong>
+          <span>{{ current_user.verificacion_observacion or 'Sin sincronizar' }}</span>
+          <span>{{ current_user.ministerio_modalidad or 'Modalidad no detectada' }}</span>
+          <span>{{ current_user.ministerio_categorias or 'Categorias no detectadas' }}</span>
+          <span>{{ current_user.verificacion_actualizada_en.strftime('%d/%m/%Y %H:%M') if current_user.verificacion_actualizada_en else 'Sin fecha de verificacion' }}</span>
+        </div>
+      </div>
+
+      <section class="dashboard-intro-card surface-card">
+        <div class="dashboard-intro-copy">
+          <span class="dashboard-kicker"><i class="fa-solid fa-compass"></i> Que hacer ahora</span>
+          <h2>Tu panel prioriza primero lo urgente: revisar, retirar y cerrar.</h2>
+          <p>Abajo tienes accesos rapidos para entrar directo a cada bloque operativo sin recorrer toda la pagina.</p>
+        </div>
+        <div class="dashboard-guide-grid">
+          <div class="dashboard-guide-item">
+            <i class="fa-regular fa-bell"></i>
+            <div>
+              <strong>Revisar pedidos</strong>
+              <span>Acepta o rechaza solicitudes nuevas.</span>
+            </div>
+          </div>
+          <div class="dashboard-guide-item">
+            <i class="fa-solid fa-truck-fast"></i>
+            <div>
+              <strong>Registrar retiro</strong>
+              <span>Marca cuando el residuo ya fue levantado.</span>
+            </div>
+          </div>
+          <div class="dashboard-guide-item">
+            <i class="fa-solid fa-file-circle-check"></i>
+            <div>
+              <strong>Cerrar servicio</strong>
+              <span>Sube peso, destino y comprobantes finales.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="metrics company-summary-grid operator-summary-grid">
+        <a href="#revisar" class="institutional-metric-card metric-alert company-metric-link">
+          <div class="value">{{ pendientes|length }}</div>
+          <div class="label">Pedidos nuevos</div>
+          <div class="metric-note">Solicitudes esperando aceptacion o rechazo.</div>
+        </a>
+        <a href="#retiros" class="institutional-metric-card metric-operations company-metric-link">
+          <div class="value">{{ aceptadas|length }}</div>
+          <div class="label">Por retirar</div>
+          <div class="metric-note">Servicios aceptados listos para ejecutar.</div>
+        </a>
+        <a href="#cierres" class="institutional-metric-card metric-docs company-metric-link">
+          <div class="value">{{ retiradas|length }}</div>
+          <div class="label">Por cerrar</div>
+          <div class="metric-note">Falta peso real, destino y respaldo final.</div>
+        </a>
+        <a href="{{ url_for('contratos') }}" class="institutional-metric-card metric-contracts company-metric-link">
+          <div class="value">{{ contract_summary.pendientes }}</div>
+          <div class="label">Contratos pendientes</div>
+          <div class="metric-note">Vinculos que todavia requieren firma o revision.</div>
+        </a>
+        <a href="#ingresos" class="institutional-metric-card metric-success company-metric-link">
+          <div class="value">UYU {{ '%.0f'|format(income_summary.month_total) }}</div>
+          <div class="label">Ingresos del mes</div>
+          <div class="metric-note">{{ income_summary.month_count }} servicio(s) cerrados en el periodo.</div>
+        </a>
+        <a href="#perfil" class="institutional-metric-card metric-timing company-metric-link">
+          <div class="value">{{ gestor_fiscal_completion }}%</div>
+          <div class="label">Perfil operativo</div>
+          <div class="metric-note">Datos fiscales, zonas, tarifas y categorias.</div>
+        </a>
+      </div>
+
+      <div class="dashboard-actions dashboard-actions-tight">
+        <a href="{{ url_for('contratos') }}" class="btn secondary-btn"><i class="fa-solid fa-file-signature"></i> Contratos</a>
+        <a href="{{ url_for('documentos') }}" class="btn secondary-btn"><i class="fa-regular fa-folder-open"></i> Centro documental</a>
+      </div>
+
+      <div class="operator-nav-grid">
+        <a href="#revisar" class="operator-nav-card">
+          <i class="fa-regular fa-bell"></i>
+          <div>
+            <strong>Pedidos nuevos</strong>
+            <span>{{ pendientes|length }} por revisar</span>
+          </div>
+        </a>
+        <a href="#retiros" class="operator-nav-card">
+          <i class="fa-solid fa-truck-fast"></i>
+          <div>
+            <strong>Por retirar</strong>
+            <span>{{ aceptadas|length }} confirmados</span>
+          </div>
+        </a>
+        <a href="#cierres" class="operator-nav-card">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <div>
+            <strong>Por cerrar</strong>
+            <span>{{ retiradas|length }} pendientes</span>
+          </div>
+        </a>
+        <a href="#ingresos" class="operator-nav-card">
+          <i class="fa-solid fa-sack-dollar"></i>
+          <div>
+            <strong>Mis ingresos</strong>
+            <span>UYU {{ '%.0f'|format(income_summary.completed_total) }} cerrados</span>
+          </div>
+        </a>
+        <a href="#perfil" class="operator-nav-card">
+          <i class="fa-regular fa-id-card"></i>
+          <div>
+            <strong>Perfil</strong>
+            <span>{{ gestor_fiscal_completion }}% completo</span>
+          </div>
+        </a>
+      </div>
+
+      {% if gestor_alerts %}
+      <section class="panel-card surface-card request-detail-card compact-alert-strip">
+        <div class="panel-head inline-head compact-head">
+          <div>
+            <h2>Alertas rapidas</h2>
+            <p>Servicios con sensibilidad o documentacion reforzada.</p>
+          </div>
+        </div>
+        <div class="operator-alert-chips">
+          {% for s in gestor_alerts %}
+          <span class="operator-alert-chip">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            #{{ s.id }} {{ s.tipo }} · {{ s.empresa }}
+          </span>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      {% if pending_contract_orders %}
+      <section class="panel-card surface-card request-detail-card compact-alert-strip">
+        <div class="panel-head inline-head compact-head">
+          <div>
+            <h2>Marco legal pendiente</h2>
+            <p>Estos retiros no se pueden aceptar hasta que el contrato marco quede vigente.</p>
+          </div>
+          <a href="{{ url_for('contratos') }}" class="btn secondary-btn">Revisar contratos</a>
+        </div>
+        <div class="operator-alert-chips">
+          {% for s in pending_contract_orders %}
+          <span class="operator-alert-chip">
+            <i class="fa-solid fa-file-circle-xmark"></i>
+            #{{ s.id }} {{ s.empresa }} · {{ s.gestor_nombre }}
+          </span>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <section id="retiros" class="operator-work-section">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Retiros por ejecutar</h2>
+            <p>Solicitudes aceptadas listas para registrar retiro en sitio.</p>
+          </div>
+        </div>
+        {% if aceptadas %}
+        <div class="service-card-grid">
+          {% for s in aceptadas %}
+          <article class="service-card service-card-priority">
+            <div class="service-card-top">
+              <div>
+                <p class="service-kicker">Solicitud #{{ s.id }}</p>
+                <h3>{{ s.empresa }}</h3>
+              </div>
+              <div class="service-statuses">
+                <span class="status-chip status-aceptada">Aceptada</span>
+                {% if s.nivel_riesgo == 'alto' %}
+                <span class="status-chip status-rechazada">Residuo sensible</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="service-meta">
+              <div><span>Residuo</span><strong>{{ s.tipo }}</strong></div>
+              <div><span>Peso estimado</span><strong>{{ '%.2f'|format(s.peso_estimado) }} kg</strong></div>
+              <div><span>Fecha</span><strong>{{ s.fecha_label }}</strong></div>
+              <div><span>Direccion</span><strong>{{ s.direccion_retiro or s.ubicacion }}</strong></div>
+            </div>
+
+            <div class="request-detail-panels">
+              <div class="info-box">
+                <strong>Que hacer aca</strong>
+                <p>Cuando realmente retires el residuo, registra quienes participaron, agrega evidencia y pasa el servicio a la etapa de cierre.</p>
+              </div>
+              <div class="info-box">
+                <strong>Timeline</strong>
+                <div class="mini-timeline">
+                  {% for item in s.timeline_items[-3:] %}
+                  <span>{{ item.evento.replace('_', ' ')|capitalize }} · {{ item.creado.strftime('%d/%m %H:%M') }}</span>
+                  {% else %}
+                  <span>Sin eventos todavia.</span>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <form action="{{ url_for('gestor_accion', sid=s.id, accion='retirar') }}" method="post" enctype="multipart/form-data" class="service-complete-form">
+              <div class="service-form-grid">
+                <label>
+                  <span>Entrego el residuo</span>
+                  <input type="text" name="retiro_entregado_por" placeholder="Nombre de quien entrega" required>
+                </label>
+                <label>
+                  <span>Recibio / conformo</span>
+                  <input type="text" name="retiro_recibido_por" placeholder="Nombre de quien recibe o conforma" required>
+                </label>
+                <label>
+                  <span>Foto o evidencia del retiro</span>
+                  <input type="file" name="evidencia_retiro" accept=".pdf,.jpg,.jpeg,.png">
+                </label>
+                <label>
+                  <span>Matricula</span>
+                  <input type="text" name="vehiculo_matricula" value="{{ s.vehiculo_matricula or '' }}" placeholder="Ej. SBX1234">
+                </label>
+                <label>
+                  <span>Vehiculo</span>
+                  <input type="text" name="vehiculo_descripcion" value="{{ s.vehiculo_descripcion or '' }}" placeholder="Ej. Camion caja abierta">
+                </label>
+                <label class="service-field-wide">
+                  <span>Destino previsto</span>
+                  <input type="text" name="destino_previsto" value="{{ s.destino_previsto or '' }}" placeholder="Planta o destino previsto">
+                </label>
+                <label class="service-field-wide">
+                  <span>Observacion del retiro</span>
+                  <input type="text" name="retiro_observaciones" placeholder="Acceso, horario, firma, novedades del retiro">
+                </label>
+              </div>
+              <button type="submit" class="btn"><i class="fa-solid fa-box-archive"></i> Marcar retiro realizado</button>
+            </form>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-card">
+          <i class="fa-solid fa-truck-fast"></i>
+          <h3>No hay retiros aceptados para ejecutar</h3>
+          <p>Cuando aceptes un pedido nuevo, aparecera aca para registrar matricula, evidencia y retiro en sitio.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      {% if retiradas %}
+      <section id="cierres" class="operator-work-section">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Cierres pendientes</h2>
+            <p>Retiros ya realizados que necesitan peso, destino y documentos finales.</p>
+          </div>
+        </div>
+        <div class="service-card-grid">
+          {% for s in retiradas %}
+          <article class="service-card service-card-priority">
+            <div class="service-card-top">
+              <div>
+                <p class="service-kicker">Solicitud #{{ s.id }}</p>
+                <h3>{{ s.empresa }}</h3>
+              </div>
+              <div class="service-statuses">
+                <span class="status-chip status-retirada">Retirada</span>
+                {% if s.nivel_riesgo == 'alto' %}
+                <span class="status-chip status-rechazada">Residuo sensible</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="service-meta">
+              <div><span>Residuo</span><strong>{{ s.tipo }}</strong></div>
+              <div><span>Direccion</span><strong>{{ s.direccion_retiro or s.ubicacion }}</strong></div>
+              <div><span>Retirado</span><strong>{{ s.retirada_en.strftime('%d/%m/%Y %H:%M') if s.retirada_en else 'Recien marcado' }}</strong></div>
+              <div><span>Entrego / recibio</span><strong>{{ s.retiro_entregado_por or 'Sin dato' }} · {{ s.retiro_recibido_por or 'Sin dato' }}</strong></div>
+            </div>
+
+            <div class="request-detail-panels">
+              <div class="info-box">
+                <strong>Acta de retiro</strong>
+                <p>{{ s.retiro_observaciones or 'Sin observaciones del momento del retiro.' }}</p>
+              </div>
+              <div class="info-box">
+                <strong>Evidencia en sitio</strong>
+                <div class="doc-links">
+                  {% if s.evidencia_retiro %}<a href="{{ s.evidencia_retiro }}" target="_blank">Abrir evidencia del retiro</a>{% else %}<span class="muted-label">Sin evidencia cargada</span>{% endif %}
+                </div>
+              </div>
+            </div>
+
+            <form action="{{ url_for('completar_retiro', sid=s.id) }}" method="post" enctype="multipart/form-data" class="service-complete-form">
+              <div class="service-form-grid">
+                <label>
+                  <span>Peso real</span>
+                  <input type="number" step="0.01" min="0.01" name="peso_real" placeholder="Kg reales" required>
+                </label>
+                <label>
+                  <span>Destino final</span>
+                  <input type="text" name="destino_final" placeholder="Planta o destino" required>
+                </label>
+                <label class="service-field-wide">
+                  <span>Observaciones finales</span>
+                  <input type="text" name="observaciones" placeholder="Notas del cierre">
+                </label>
+                <label>
+                  <span>Comprobante de peso</span>
+                  <input type="file" name="comprobante_peso" accept=".pdf,.jpg,.jpeg,.png">
+                </label>
+                <label>
+                  <span>Evidencia del retiro</span>
+                  <input type="file" name="evidencia_retiro" accept=".pdf,.jpg,.jpeg,.png">
+                </label>
+                <label>
+                  <span>Certificado de destino</span>
+                  <input type="file" name="certificado_destino" accept=".pdf,.jpg,.jpeg,.png">
+                </label>
+              </div>
+              <button type="submit" class="btn">Completar servicio</button>
+            </form>
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+
+      <section id="revisar" class="operator-work-section">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Pedidos nuevos</h2>
+            <p>{{ pendientes|length }} solicitud(es) esperando una respuesta operativa.</p>
+          </div>
+        </div>
+        {% if pendientes %}
+        <div class="operator-request-grid">
+          {% for s in pendientes %}
+          <article class="operator-request-card">
+            <div class="operator-request-top">
+              <div>
+                <p class="service-kicker">Solicitud #{{ s.id }}</p>
+                <h3>{{ s.empresa }}</h3>
+              </div>
+              <div class="service-statuses">
+                {% if s.nivel_riesgo == 'alto' %}
+                <span class="status-chip status-rechazada">Residuo sensible</span>
+                {% elif s.alerta_peso %}
+                <span class="status-chip status-pendiente">Revisar peso</span>
+                {% else %}
+                <span class="status-chip status-chip-success">Listo para evaluar</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="operator-request-facts">
+              <div><span>Residuo</span><strong>{{ s.tipo }}</strong></div>
+              <div><span>Peso estimado</span><strong>{{ '%.2f'|format(s.peso_estimado) }} kg</strong></div>
+              <div><span>Fecha</span><strong>{{ s.fecha_label }}</strong></div>
+              <div><span>Origen</span><strong>{{ s.direccion_retiro or s.ubicacion }}</strong></div>
+            </div>
+
+            <div class="operator-request-note">
+              <strong>Observaciones</strong>
+              <p>{{ s.observaciones or 'Sin observaciones cargadas por la empresa.' }}</p>
+            </div>
+
+            <div class="operator-decision-panel">
+              <form action="{{ url_for('gestor_accion', sid=s.id, accion='aceptar') }}" method="post" class="operator-accept-form">
+                <div class="operator-decision-fields">
+                  <label>
+                    <span>Matricula</span>
+                    <input type="text" name="vehiculo_matricula" placeholder="Ej. SBX1234">
+                  </label>
+                  <label>
+                    <span>Vehiculo</span>
+                    <input type="text" name="vehiculo_descripcion" placeholder="Ej. Camion caja">
+                  </label>
+                </div>
+                <button type="submit" class="btn"><i class="fa-solid fa-check"></i> Aceptar pedido</button>
+              </form>
+              <form action="{{ url_for('gestor_accion', sid=s.id, accion='rechazar') }}" method="post" class="operator-reject-form">
+                <button type="submit" class="btn secondary-btn"><i class="fa-solid fa-xmark"></i> Rechazar</button>
+              </form>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-card">
+          <i class="fa-regular fa-bell"></i>
+          <h3>No hay pedidos nuevos para revisar</h3>
+          <p>Cuando una empresa te asigne una solicitud, vas a poder aceptarla o rechazarla desde esta seccion.</p>
+        </div>
+        {% endif %}
+      </section>
+
+      {% if completed_to_rate %}
+      <details id="valoraciones" class="accordion-card operator-section-accordion">
+        <summary>
+          <div>
+            <strong>Valorar empresas</strong>
+            <span>{{ completed_to_rate|length }} cierre(s) pendientes de valoracion</span>
+          </div>
+          <span class="accordion-icon">+</span>
+        </summary>
+        <div class="accordion-form">
+          <div class="service-card-grid">
+            {% for s in completed_to_rate %}
+            <article class="service-card">
+              <div class="service-card-top">
+                <div>
+                  <p class="service-kicker">Solicitud #{{ s.id }}</p>
+                  <h3>{{ s.empresa }}</h3>
+                </div>
+                <div class="service-statuses">
+                  <span class="status-chip status-completada">Completada</span>
+                  {% if s.owner.rating_promedio %}
+                  <span class="status-chip status-aceptada">Promedio {{ s.owner.rating_promedio }}/5</span>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="service-meta">
+                <div><span>Residuo</span><strong>{{ s.tipo }}</strong></div>
+                <div><span>Fecha</span><strong>{{ s.fecha_label }}</strong></div>
+                <div><span>Destino</span><strong>{{ s.destino_final or 'Informado' }}</strong></div>
+                <div><span>Historial</span><strong>{{ s.owner.rating_cantidad }} valoracion(es)</strong></div>
+              </div>
+              {% if s.owner.rating_promedio %}
+              <div class="rating-stars" aria-label="Promedio {{ s.owner.rating_promedio }} de 5">
+                {% set avg_rating = s.owner.rating_promedio|round(0, 'common')|int %}
+                {% for star in range(1, 6) %}
+                <span class="rating-star {% if star <= avg_rating %}is-filled{% endif %}">â˜…</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              <form action="{{ url_for('calificar_empresa', sid=s.id) }}" method="post" class="service-complete-form">
+                <div class="service-form-grid">
+                  <fieldset class="star-picker">
+                    <legend>Estrellas</legend>
+                    <div class="star-picker-row">
+                      {% for star in range(5, 0, -1) %}
+                      <input type="radio" id="rating-{{ s.id }}-{{ star }}" name="empresa_rating" value="{{ star }}" required>
+                      <label for="rating-{{ s.id }}-{{ star }}" title="{{ star }} estrella(s)">â˜…</label>
+                      {% endfor %}
+                    </div>
+                  </fieldset>
+                  <label class="service-field-wide">
+                    <span>Comentario</span>
+                    <input type="text" name="empresa_rating_comment" placeholder="Puntualidad, acceso, coordinacion, documentacion, etc.">
+                  </label>
+                </div>
+                <button type="submit" class="btn secondary-btn">Guardar valoracion</button>
+              </form>
+            </article>
+            {% endfor %}
+          </div>
+        </div>
+      </details>
+      {% endif %}
+
+      {% if gestor_rating_count %}
+      <details class="accordion-card operator-section-accordion">
+        <summary>
+          <div>
+            <strong>Reputacion del operador</strong>
+            <span>{{ gestor_rating_average }}/5 estrellas · {{ gestor_rating_count }} valoracion(es)</span>
+          </div>
+          <span class="accordion-icon">+</span>
+        </summary>
+        <div class="accordion-form">
+          <div class="rating-stars" aria-label="Promedio {{ gestor_rating_average }} de 5">
+            {% set avg_rating = gestor_rating_average|round(0, 'common')|int %}
+            {% for star in range(1, 6) %}
+            <span class="rating-star {% if star <= avg_rating %}is-filled{% endif %}">â˜…</span>
+            {% endfor %}
+          </div>
+          <div class="rating-distribution">
+            {% for item in gestor_rating_distribution %}
+            <div class="rating-distribution-row">
+              <div class="rating-distribution-label">{{ item.stars }}â˜…</div>
+              <div class="rating-distribution-bar">
+                <span style="width: {{ item.bar_pct }}%"></span>
+              </div>
+              <div class="rating-distribution-meta">{{ item.count }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </details>
+      {% endif %}
+
+      <section id="ingresos" class="operator-work-section operator-income-section">
+        <div class="panel-head inline-head">
+          <div>
+            <h2>Mis ingresos</h2>
+            <p>Vista economica de tus transportes: cerrado, pendiente y servicios que todavia pueden generar ingreso.</p>
+          </div>
+        </div>
+
+        <div class="operator-income-grid">
+          <article class="operator-income-card income-card-success">
+            <div class="operator-income-card-head">
+              <i class="fa-solid fa-dollar-sign"></i>
+              <span>Ingresos cerrados</span>
+            </div>
+            <strong><small>UYU</small> {{ '%.2f'|format(income_summary.completed_total) }}</strong>
+            <p>{{ income_summary.completed_count }} servicio(s) completados y listos para liquidacion.</p>
+          </article>
+          <article class="operator-income-card income-card-month">
+            <div class="operator-income-card-head">
+              <i class="fa-solid fa-calendar-dollar"></i>
+              <span>Mes actual</span>
+            </div>
+            <strong><small>UYU</small> {{ '%.2f'|format(income_summary.month_total) }}</strong>
+            <p>{{ income_summary.month_count }} cierre(s) dentro del periodo actual.</p>
+          </article>
+          <article class="operator-income-card income-card-pending">
+            <div class="operator-income-card-head">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+              <span>Estimado pendiente</span>
+            </div>
+            <strong><small>UYU</small> {{ '%.2f'|format(income_summary.pending_total) }}</strong>
+            <p>Servicios aceptados o retirados que aun deben ejecutarse o cerrarse.</p>
+          </article>
+          <article class="operator-income-card income-card-average">
+            <div class="operator-income-card-head">
+              <i class="fa-solid fa-chart-line"></i>
+              <span>Ticket promedio</span>
+            </div>
+            <strong><small>UYU</small> {{ '%.2f'|format(income_summary.average_ticket) }}</strong>
+            <p>Promedio por transporte cerrado en la plataforma.</p>
+          </article>
+        </div>
+
+        <div class="operator-income-layout">
+          <article class="operator-income-panel">
+            <div class="operator-income-panel-head">
+              <div>
+                <h3>Ingreso por estado operativo</h3>
+                <p>Te muestra que ya esta cerrado y que falta para convertirlo en ingreso final.</p>
+              </div>
+            </div>
+            <div class="operator-income-status-list">
+              {% for item in income_summary.status_breakdown %}
+              <a href="{% if item.label == 'Cerrados' %}#ingresos{% elif item.label == 'Por cerrar' %}#cierres{% else %}#retiros{% endif %}" class="operator-income-status income-status-{{ item.tone }}">
+                <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                <div>
+                  <strong>{{ item.label }}</strong>
+                  <span>{{ item.hint }}</span>
+                </div>
+                <div class="operator-income-status-amount">
+                  <b>UYU {{ '%.2f'|format(item.amount) }}</b>
+                  <small>{{ item.count }} servicio(s)</small>
+                </div>
+              </a>
+              {% endfor %}
+            </div>
+          </article>
+
+          <article class="operator-income-panel">
+            <div class="operator-income-panel-head">
+              <div>
+                <h3>Mejores empresas por ingreso</h3>
+                <p>Ranking segun transportes completados.</p>
+              </div>
+            </div>
+            <div class="operator-income-list">
+              {% for company in income_summary.top_companies %}
+              <div class="operator-income-row">
+                <i class="fa-solid fa-building-circle-check"></i>
+                <div>
+                  <strong>{{ company.name }}</strong>
+                  <span>{{ company.count }} servicio(s) cerrados</span>
+                </div>
+                <b>UYU {{ '%.2f'|format(company.amount) }}</b>
+              </div>
+              {% else %}
+              <div class="operator-income-empty">
+                <i class="fa-regular fa-chart-bar"></i>
+                <span>Todavia no hay servicios cerrados para armar ranking.</span>
+              </div>
+              {% endfor %}
+            </div>
+          </article>
+        </div>
+
+        <article class="operator-income-panel">
+          <div class="operator-income-panel-head">
+            <div>
+              <h3>Ultimos servicios facturables</h3>
+              <p>Detalle rapido para entender de donde vienen los ingresos cerrados.</p>
+            </div>
+          </div>
+          <div class="operator-income-table">
+            {% for s in income_summary.recent_services %}
+            <div class="operator-income-service-row">
+              <div>
+                <span>Solicitud #{{ s.id }}</span>
+                <strong>{{ s.empresa }}</strong>
+              </div>
+              <div>
+                <span>Residuo</span>
+                <strong>{{ s.tipo }}</strong>
+              </div>
+              <div>
+                <span>Cierre</span>
+                <strong>{{ s.completada_en.strftime('%d/%m/%Y') if s.completada_en else s.fecha_label }}</strong>
+              </div>
+              <div>
+                <span>Ingreso transporte</span>
+                <strong>UYU {{ '%.2f'|format(s.liquidacion_transportista_final_uyu if s.liquidacion_transportista_final_uyu is not none else (s.liquidacion_transportista_uyu or s.monto_transporte_uyu or s.precio_estimado or 0)) }}</strong>
+              </div>
+            </div>
+            {% else %}
+            <div class="operator-income-empty">
+              <i class="fa-solid fa-sack-dollar"></i>
+              <span>Cuando cierres servicios, aca vas a ver el detalle economico por transporte.</span>
+            </div>
+            {% endfor %}
+          </div>
+        </article>
+      </section>
+
+      <details id="perfil" class="accordion-card">
+        <summary>
+          <div>
+            <strong>Perfil del operador</strong>
+            <span>{{ current_user.ubicacion or 'Zona sin definir' }} · Completitud {{ gestor_fiscal_completion }}%</span>
+          </div>
+          <span class="accordion-icon">+</span>
+        </summary>
+        <form action="{{ url_for('gestor_perfil') }}" method="post" class="stack-form accordion-form">
+          <div class="grid-2">
+            <label>
+              Nombre operativo
+              <input type="text" name="empresa" value="{{ current_user.empresa or '' }}" required>
+            </label>
+            <label>
+              Correo de acceso
+              <input type="email" name="email" value="{{ current_user.email }}" required>
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Contacto operativo
+              <input type="text" name="contacto_nombre" value="{{ current_user.contacto_nombre or '' }}" placeholder="Ej. Marcelo Silva">
+            </label>
+            <label>
+              Telefono
+              <input type="text" name="telefono" value="{{ current_user.telefono or '' }}" placeholder="Ej. 099 555 555">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Zona principal
+              <input type="text" name="ubicacion" value="{{ current_user.ubicacion or '' }}" required>
+            </label>
+            <label>
+              Razon social
+              <input type="text" name="razon_social" value="{{ current_user.razon_social or current_user.empresa or '' }}">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Zonas de cobertura
+              <input type="text" name="zonas_cobertura" value="{{ current_user.zonas_cobertura or '' }}" placeholder="Ej. Pocitos, Centro, Canelones">
+            </label>
+            <label>
+              Radio de cobertura (km)
+              <input type="number" step="1" min="0" name="radio_cobertura_km" value="{{ '%.0f'|format(current_user.radio_cobertura_km or 25) }}">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              RUT
+              <input type="text" name="rut" value="{{ current_user.rut or current_user.ministerio_rut or '' }}">
+            </label>
+            <label>
+              Giro
+              <input type="text" name="giro" value="{{ current_user.giro or '' }}" placeholder="Ej. Transporte y gestion">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Condicion tributaria
+              <input type="text" name="condicion_tributaria" value="{{ current_user.condicion_tributaria or '' }}" placeholder="Ej. Contribuyente IVA">
+            </label>
+            <label>
+              Domicilio fiscal
+              <input type="text" name="domicilio_fiscal" value="{{ current_user.domicilio_fiscal or '' }}">
+            </label>
+          </div>
+
+          <div class="grid-2">
+            <label>
+              Contacto de facturacion
+              <input type="text" name="contacto_facturacion" value="{{ current_user.contacto_facturacion or '' }}">
+            </label>
+            <label>
+              Email de facturacion
+              <input type="email" name="email_facturacion" value="{{ current_user.email_facturacion or '' }}">
+            </label>
+          </div>
+
+          <div class="grid-3">
+            <label>
+              Base retiro (UYU)
+              <input type="number" step="0.01" min="0" name="tarifa_base_retiro_uyu" value="{{ '%.2f'|format(current_user.tarifa_base_retiro_uyu or 0) }}">
+            </label>
+            <label>
+              Variable por kg (UYU)
+              <input type="number" step="0.01" min="0" name="tarifa_por_kg" value="{{ '%.2f'|format(current_user.tarifa_por_kg or 0) }}">
+            </label>
+            <label>
+              Tarifa por km (UYU)
+              <input type="number" step="0.01" min="0" name="tarifa_km_uyu" value="{{ '%.2f'|format(current_user.tarifa_km_uyu or 0) }}">
+            </label>
+          </div>
+
+          <div class="grid-3">
+            <label>
+              Tarifa por m3 (UYU)
+              <input type="number" step="0.01" min="0" name="tarifa_m3_uyu" value="{{ '%.2f'|format(current_user.tarifa_m3_uyu or 0) }}">
+            </label>
+            <label>
+              Tratamiento por kg (UYU)
+              <input type="number" step="0.01" min="0" name="tarifa_tratamiento_kg_uyu" value="{{ '%.2f'|format(current_user.tarifa_tratamiento_kg_uyu or 0) }}">
+            </label>
+            <label>
+              Certificado (UYU)
+              <input type="number" step="0.01" min="0" name="costo_certificado_uyu" value="{{ '%.2f'|format(current_user.costo_certificado_uyu or 0) }}">
+            </label>
+          </div>
+
+          <div class="category-groups compact-categories">
+            {% set selected_categories = (current_user.categorias_residuo or '').split(',') %}
+            {% for group in residue_groups %}
+            <div class="category-family">
+              <strong>{{ group.label }}</strong>
+              <div class="category-checklist">
+                {% for item in group["items"] %}
+                <label class="category-item">
+                  <input type="checkbox" name="categorias_residuo" value="{{ item.key }}" {% if item.key in selected_categories %}checked{% endif %}>
+                  <span>
+                    <b>{{ item.label }}</b>
+                    <small>{{ item.description }}</small>
+                  </span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <label>
+            Notas operativas
+            <input type="text" name="notas_operativas" value="{{ current_user.notas_operativas or '' }}" placeholder="Turnos, equipos, restricciones, etc.">
+          </label>
+
+          <button type="submit" class="btn">Guardar perfil</button>
+        </form>
+      </details>
+    </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.querySelectorAll('a[href^="#"], a[href*="/dashboard#"]').forEach((link) => {
+    link.addEventListener('click', (event) => {
+      const hash = new URL(link.href, window.location.href).hash;
+      if (!hash) return;
+      const target = document.querySelector(hash);
+      if (!target) return;
+      event.preventDefault();
+      if (target.tagName === 'DETAILS') target.open = true;
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      history.replaceState(null, '', hash);
+    });
+  });
+</script>
+{% endblock %}
