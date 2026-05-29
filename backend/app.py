@@ -64,7 +64,10 @@ load_dotenv()
 BASE_DIR = os.path.dirname(__file__)
 template_dir = os.path.join(BASE_DIR, "../frontend/templates")
 static_dir = os.path.join(BASE_DIR, "../frontend/static")
-db_path = os.path.join(BASE_DIR, "instance", "recicloco.db")
+if os.getenv("VERCEL") and not os.getenv("DATABASE_URL"):
+    db_path = os.path.join("/tmp", "recicloco.db")
+else:
+    db_path = os.path.join(BASE_DIR, "instance", "recicloco.db")
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
 uploads_dir = os.path.join(static_dir, "uploads")
 os.makedirs(uploads_dir, exist_ok=True)
