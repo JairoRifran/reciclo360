@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app.py": {
+      "includeFiles": "{backend/**,frontend/templates/**}"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
@@ -7,4 +12,3 @@
     }
   ]
 }
-

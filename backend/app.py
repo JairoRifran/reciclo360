@@ -1876,6 +1876,11 @@ login_manager.login_message = "Necesitas iniciar sesion para continuar."
 login_manager.login_message_category = "info"
 
 
+@app.route("/healthz")
+def healthz():
+    return jsonify({"status": "ok"})
+
+
 @login_manager.user_loader
 def load_user(uid):
     return db.session.get(User, int(uid))
