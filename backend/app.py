@@ -1850,10 +1850,17 @@ def seed_plans():
     db.session.commit()
 
 
-with app.app_context():
+_database_ready = False
+
+
+def ensure_database_ready():
+    global _database_ready
+    if _database_ready:
+        return
     db.create_all()
     ensure_schema()
     seed_plans()
+    _database_ready = True
 
 
 @app.context_processor
@@ -1879,6 +1886,14 @@ login_manager.login_message_category = "info"
 @app.route("/healthz")
 def healthz():
     return jsonify({"status": "ok"})
+
+
+@app.before_request
+def prepare_database_for_request():
+    if request.endpoint == "healthz":
+        return None
+    ensure_database_ready()
+    return None
 
 
 @login_manager.user_loader
