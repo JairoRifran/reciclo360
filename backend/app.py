@@ -64,14 +64,19 @@ load_dotenv()
 BASE_DIR = os.path.dirname(__file__)
 template_dir = os.path.join(BASE_DIR, "../frontend/templates")
 static_dir = os.path.join(BASE_DIR, "../frontend/static")
+is_vercel = bool(os.getenv("VERCEL"))
 if os.getenv("VERCEL") and not os.getenv("DATABASE_URL"):
     db_path = os.path.join("/tmp", "recicloco.db")
 else:
     db_path = os.path.join(BASE_DIR, "instance", "recicloco.db")
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
-uploads_dir = os.path.join(static_dir, "uploads")
+uploads_dir = os.path.join("/tmp", "uploads") if is_vercel else os.path.join(static_dir, "uploads")
 os.makedirs(uploads_dir, exist_ok=True)
-ministerio_snapshot_path = os.path.join(BASE_DIR, "instance", "ministerio_transportistas_snapshot.json")
+ministerio_snapshot_path = (
+    os.path.join("/tmp", "ministerio_transportistas_snapshot.json")
+    if is_vercel
+    else os.path.join(BASE_DIR, "instance", "ministerio_transportistas_snapshot.json")
+)
 
 MINISTERIO_TRANSPORTE_XLSX_URL = (
     "https://www.gub.uy/ministerio-ambiente/sites/ministerio-ambiente/files/2026-03/"
