@@ -3,10 +3,7 @@
   "functions": {
     "api/index.py": {
       "runtime": "python3.12",
-      "includeFiles": [
-        "backend/**",
-        "frontend/templates/**"
-      ]
+      "includeFiles": "{backend/**,frontend/templates/**}"
     }
   },
   "rewrites": [
